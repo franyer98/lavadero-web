@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F4C5C">
+<title>Caja del Lavadero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="app.css?v=2026-09-27_11:14">
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="login" hidden>
+  <div class="login-card">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="30" fill="var(--wax)"/><path d="M14 38l4-10c1-3 3-4 6-4h16c3 0 5 1 6 4l4 10v7h-5v-3H19v3h-5z" fill="var(--wax-ink)"/><circle cx="21" cy="38" r="2.5" fill="var(--wax)"/><circle cx="43" cy="38" r="2.5" fill="var(--wax)"/><path d="M22 20c0-3 2-5 2-5s2 2 2 5a2 2 0 01-4 0zM31 17c0-3 2-5 2-5s2 2 2 5a2 2 0 01-4 0zM40 20c0-3 2-5 2-5s2 2 2 5a2 2 0 01-4 0z" fill="var(--petrol)"/></svg>
+    </div>
+    <h1 id="loginName">Caja del Lavadero</h1>
+    <p class="hint">Escribe tu PIN y toca Entrar</p>
+    <div class="dots" id="dots" aria-live="polite"></div>
+    <div class="pad" id="pad"></div>
+    <p class="err" id="loginErr"></p>
+    <p class="ver" id="appVer"></p>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div class="brand">
+      <h1 id="brandName">Lavadero</h1>
+      <div class="who"><span id="whoRol"></span> · <button class="linkbtn" id="salir">Salir</button></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist">
+      <button role="tab" id="tab-dia" data-tab="dia" aria-selected="true">Caja</button>
+      <button role="tab" id="tab-hist" data-tab="hist" aria-selected="false" class="solo-dueno">Historial</button>
+      <button role="tab" id="tab-aj" data-tab="aj" aria-selected="false" class="solo-dueno">Ajustes</button>
+    </nav>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <!-- CAJA -->
+  <section id="view-dia">
+    <div class="datebar solo-dueno">
+      <button class="iconbtn" id="prevDay" aria-label="Día anterior">‹</button>
+      <input type="date" id="fecha" aria-label="Fecha">
+      <button class="iconbtn" id="nextDay" aria-label="Día siguiente">›</button>
+      <button class="softbtn" id="goToday">Hoy</button>
+    </div>
+
+    <div class="ticket" aria-live="polite">
+      <div class="head"><span id="ticketFecha">—</span><span id="syncState" class="sync">Cargando…</span></div>
+      <div class="big">
+        <div class="label">Total del día</div>
+        <div class="amount num" id="totVentas">$ 0</div>
+      </div>
+      <div class="row row4 num">
+        <div><span class="label">Carros</span><b id="totCarros">0</b></div>
+        <div><span class="label">Motos</span><b id="totMotos">0</b></div>
+        <div><span class="label">Efectivo</span><b id="totEfectivo">$ 0</b></div>
+        <div><span class="label">Transferencia</span><b id="totTransf">$ 0</b></div>
+      </div>
+    </div>
+
+    <div class="reparto num" id="reparto">
+      <h2>Reparto del día · mitad y mitad</h2>
+      <dl>
+        <div><dt>Mitad del dueño</dt><dd id="rDueno">$ 0</dd></div>
+        <div><dt>Mitad del trabajador</dt><dd id="rTrab">$ 0</dd></div>
+        <div id="rPrestRow" hidden><dt>Descuento por préstamos</dt><dd class="neg" id="rPrest">$ 0</dd></div>
+        <div id="rPrestRow2" hidden><dt>Le queda al trabajador</dt><dd id="rTrabNeto">$ 0</dd></div>
+        <div id="rTransfRow" hidden><dt id="rTransfLbl">Transferencias ya en tu cuenta</dt><dd id="rTransf">$ 0</dd></div>
+      </dl>
+      <div class="debe"><span id="rDebeLbl">El trabajador te debe entregar</span><b id="rDebe">$ 0</b></div>
+      <p class="hint" id="rNota"></p>
+    </div>
+
+    <form class="panel" id="form" autocomplete="off">
+      <div class="veh" role="group" aria-label="Vehículo">
+        <button type="button" class="vehbtn" data-veh="Carro" aria-pressed="true">
+          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M3 20v-4l6-8c1-1.3 2-2 4-2h14c2 0 3 .7 4 2l5 6h6a2 2 0 012 2v4z"/><circle cx="13" cy="21" r="5"/><circle cx="36" cy="21" r="5"/><circle cx="13" cy="21" r="2.2" class="hole"/><circle cx="36" cy="21" r="2.2" class="hole"/><path d="M13 9h6v5h-9zM22 9h5l4 5h-9z" class="hole"/></svg>
+          Carro</button>
+        <button type="button" class="vehbtn" data-veh="Moto" aria-pressed="false">
+          <svg viewBox="0 0 48 28" aria-hidden="true"><circle cx="10" cy="19" r="7"/><circle cx="38" cy="19" r="7"/><circle cx="10" cy="19" r="3.4" class="hole"/><circle cx="38" cy="19" r="3.4" class="hole"/><path d="M10 19l8-9h9l4 5 7 4-2 2-8-3H20z"/><path d="M29 6h6v3h-6z"/></svg>
+          Moto</button>
+      </div>
+
+      <label class="field"><span>Valor</span>
+        <input id="valor" class="money num" inputmode="numeric" placeholder="$ 0">
+      </label>
+
+      <button type="button" class="transf" id="transf" aria-pressed="false">
+        <span class="box" aria-hidden="true"></span> Pagó por transferencia
+      </button>
+
+      <button class="primary" id="guardar" type="submit">Guardar</button>
+      <div class="hint" id="formHint"></div>
+    </form>
+
+    <div class="panel prest">
+      <button type="button" class="prest-toggle" id="abrirPrest" aria-expanded="false">
+        <span>Préstamo o descuento al trabajador</span><span class="chev" aria-hidden="true">+</span>
+      </button>
+      <form id="prestForm" class="stack" autocomplete="off" hidden>
+        <label class="field"><span>Valor que se llevó</span>
+          <input id="prestValor" class="money num" inputmode="numeric" placeholder="$ 0">
+        </label>
+        <label class="field"><span>Motivo (opcional)</span>
+          <input id="prestNota" maxlength="80" placeholder="Ej. adelanto, almuerzo, pasaje">
+        </label>
+        <button class="danger" id="guardarPrest" type="submit">Registrar préstamo</button>
+        <div class="hint" id="prestHint">No sale del efectivo del negocio: se descuenta de la mitad del trabajador ese día.</div>
+      </form>
+    </div>
+
+    <div class="list">
+      <h2>Registros <small id="listSub"></small></h2>
+      <div id="items"></div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="view-hist" hidden>
+    <div class="stats num">
+      <div class="stat"><span class="label">Últimos 7 días</span><b id="s7">$ 0</b><small id="s7c"></small></div>
+      <div class="stat"><span class="label">Este mes</span><b id="sMes">$ 0</b><small id="sMesc"></small></div>
+      <div class="stat"><span class="label">Tu parte este mes</span><b id="sPrest">$ 0</b><small id="sPrestc"></small></div>
+    </div>
+    <div class="chart">
+      <h2>Ventas, últimos 14 días</h2>
+      <div class="bars" id="bars"></div>
+      <div class="axis" id="axis"></div>
+    </div>
+    <div class="hist">
+      <h2>Día por día</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Vehículos</th><th>Total</th><th>Descuentos</th><th>Te debe dar</th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="view-aj" hidden>
+    <div class="panel">
+      <h2>Nombre del lavadero</h2>
+      <input id="cfgNombre" placeholder="Ej. Lavadero El Brillante">
+    </div>
+    <div class="panel">
+      <h2>¿A qué cuenta llegan las transferencias?</h2>
+      <div class="opts" id="transfDest">
+        <button type="button" class="opt" data-td="dueno" aria-pressed="true">A la mía (dueño)</button>
+        <button type="button" class="opt" data-td="trabajador" aria-pressed="false">A la del trabajador</button>
+      </div>
+      <div class="hint">Así la app sabe cuánto efectivo te tiene que entregar el trabajador.</div>
+      <button type="button" class="primary" id="saveCfg">Guardar ajustes</button>
+    </div>
+    <div class="panel">
+      <h2>Exportar a Excel</h2>
+      <div class="two">
+        <label class="field"><span>Desde</span><input type="date" id="expDesde"></label>
+        <label class="field"><span>Hasta</span><input type="date" id="expHasta"></label>
+      </div>
+      <button type="button" class="primary" id="exportar">Exportar registros (CSV)</button>
+      <div class="hint">El archivo se abre en Excel o Google Sheets. En el celular puedes enviarlo por WhatsApp o guardarlo en Drive.</div>
+    </div>
+    <div class="panel">
+      <h2>Cambiar PIN</h2>
+      <div class="two">
+        <label class="field"><span>PIN de</span>
+          <select id="pinRol"><option value="trabajador">Trabajador</option><option value="dueno">Dueño (el tuyo)</option></select>
+        </label>
+        <label class="field"><span>PIN nuevo (4 a 6 dígitos)</span>
+          <input id="pinNuevo" inputmode="numeric" maxlength="6" placeholder="••••••">
+        </label>
+      </div>
+      <button type="button" class="ghost" id="cambiarPin">Cambiar PIN</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js?v=2026-09-27_11:14"></script>
+<script src="app.js?v=2026-09-27_11:14"></script>
+</body>
+</html>
