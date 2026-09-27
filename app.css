@@ -219,3 +219,9 @@ td.neg{color:var(--bad)}
 .editor .opts .opt:only-child,.editor .opts .opt:nth-child(1):nth-last-child(2),.editor .opts .opt:nth-child(2):nth-last-child(1){grid-column:span 3}
 .veh .vehbtn{text-transform:none;letter-spacing:0;font:700 16px var(--body);overflow-wrap:normal}
 .reparto dl>div.fuerte dt,.reparto dl>div.fuerte dd{color:var(--ink);font-weight:800}.reparto dt{padding-right:8px}
+.saldo-box{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-weight:600}
+.saldo-box b{font-family:var(--display);font-size:24px}
+.saldo-box b.neg{color:var(--bad)}
+.saldo-mini{font-weight:600;color:var(--bad);font-size:14px}
+.item.abono .what b,.item.abono .val{color:var(--good)}
+.saldo-mini{display:block;white-space:nowrap}
