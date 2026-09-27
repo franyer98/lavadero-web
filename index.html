@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Caja del Lavadero</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="app.css?v=2026-09-27_11:36">
+<link rel="stylesheet" href="app.css?v=2026-09-27_12:28">
 </head>
 <body>
 
@@ -66,13 +66,7 @@
 
     <div class="reparto num" id="reparto">
       <h2>Reparto del día · mitad y mitad</h2>
-      <dl>
-        <div><dt>Mitad del dueño</dt><dd id="rDueno">$ 0</dd></div>
-        <div><dt>Mitad del trabajador</dt><dd id="rTrab">$ 0</dd></div>
-        <div id="rPrestRow" hidden><dt>Descuento por préstamos</dt><dd class="neg" id="rPrest">$ 0</dd></div>
-        <div id="rPrestRow2" hidden><dt>Le queda al trabajador</dt><dd id="rTrabNeto">$ 0</dd></div>
-        <div id="rTransfRow" hidden><dt id="rTransfLbl">Transferencias ya en tu cuenta</dt><dd id="rTransf">$ 0</dd></div>
-      </dl>
+      <dl id="rLista"></dl>
       <div class="debe"><span id="rDebeLbl">El trabajador te debe entregar</span><b id="rDebe">$ 0</b></div>
       <p class="hint" id="rNota"></p>
     </div>
@@ -194,7 +188,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-09-27_11:36"></script>
-<script src="app.js?v=2026-09-27_11:36"></script>
+<script src="config.js?v=2026-09-27_12:28"></script>
+<script src="app.js?v=2026-09-27_12:28"></script>
 </body>
 </html>

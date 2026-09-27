@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 11:36";
+  const APP_VERSION = "2026-09-27 12:28";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -154,8 +154,12 @@
     const f = S.fecha, my = ++cargando;
     if (!silencioso) $("syncState").textContent = "Cargando…";
     try {
-      const r = await rpc("ver_dia", { p_pin: S.pin, p_fecha: f });
+      const [r, sal] = await Promise.all([
+        rpc("ver_dia", { p_pin: S.pin, p_fecha: f }),
+        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: f }).catch(() => null)
+      ]);
       if (my !== cargando) return;
+      S.saldoPrev = sal && typeof sal.saldo === "number" ? sal.saldo : 0;
       S.registros = r.registros || []; S.hoy = r.hoy;
       if (!esDueno()) S.fecha = r.fecha;
       const nuevoCfg = normCfg(r.config);
@@ -188,24 +192,35 @@
   // Ajustes guardados dentro de config.servicios como {tipo:"ajuste", transf:"dueno"|"trabajador"}
   function ajustes() { return (S.cfg.servicios || []).find(x => x && x.tipo === "ajuste") || {}; }
   function transfDestino() { return ajustes().transf === "trabajador" ? "trabajador" : "dueno"; }
-  function calcReparto(t) {
+  // prev = préstamos que vienen de días anteriores sin descontar.
+  // Cada día se descuenta como máximo la mitad del trabajador; el resto pasa al día siguiente.
+  function calcReparto(t, prev) {
+    prev = prev || 0;
     const mitad = t.total / 2;
-    const paraDueno = mitad + t.prest;               // su mitad + lo que se le descuenta al trabajador
+    const deuda = prev + t.prest;
+    const descuento = Math.min(deuda, Math.floor(mitad));
+    const pendiente = deuda - descuento;
+    const paraDueno = mitad + descuento;
     const dest = transfDestino();
     const entregar = dest === "dueno" ? paraDueno - t.transf : paraDueno;
-    return { mitad, paraDueno, entregar, dest };
+    return { mitad, deuda, descuento, pendiente, paraDueno, entregar, dest, prev };
   }
   function renderReparto(t) {
-    const r = calcReparto(t);
-    $("rDueno").textContent = money(r.mitad);
-    $("rTrab").textContent = money(r.mitad);
-    $("rPrestRow").hidden = $("rPrestRow2").hidden = !t.prest;
-    $("rPrest").textContent = "−" + money(t.prest);
-    $("rTrabNeto").textContent = money(r.mitad - t.prest);
-    const muestraTransf = r.dest === "dueno" && t.transf > 0;
-    $("rTransfRow").hidden = !muestraTransf;
-    $("rTransf").textContent = "−" + money(t.transf);
-    $("rTransfLbl").textContent = esDueno() ? "Transferencias que ya te llegaron" : "Transferencias que ya le llegaron al dueño";
+    const r = calcReparto(t, S.saldoPrev);
+    const filas = [
+      ["Mitad del dueño", money(r.mitad)],
+      ["Mitad del trabajador", money(r.mitad)]
+    ];
+    if (r.deuda > 0) {
+      if (r.prev > 0) filas.push(["Préstamos pendientes de días anteriores", money(r.prev)]);
+      if (t.prest > 0) filas.push(["Préstamos de hoy", money(t.prest)]);
+      filas.push(["Se le descuenta hoy de su mitad", "−" + money(r.descuento), "neg"]);
+      filas.push(["Le queda al trabajador hoy", money(r.mitad - r.descuento), "strong"]);
+      if (r.pendiente > 0) filas.push(["Sigue debiendo (se descuenta en los próximos días)", money(r.pendiente), "neg"]);
+    }
+    if (r.dest === "dueno" && t.transf > 0)
+      filas.push([esDueno() ? "Transferencias que ya te llegaron" : "Transferencias que ya le llegaron al dueño", "−" + money(t.transf)]);
+    $("rLista").innerHTML = filas.map(([k, v, c]) => `<div class="${c === "strong" ? "fuerte" : ""}"><dt>${esc(k)}</dt><dd class="${c === "neg" ? "neg" : ""}">${esc(v)}</dd></div>`).join("");
     const debe = Math.round(r.entregar);
     if (debe >= 0) {
       $("rDebeLbl").textContent = esDueno() ? "El trabajador te debe entregar" : "Le debes entregar al dueño";
@@ -216,9 +231,12 @@
       $("rDebe").textContent = money(-debe);
       $("rDebe").className = "neg";
     }
-    $("rNota").textContent = r.dest === "dueno"
+    const notas = [];
+    if (r.pendiente > 0) notas.push("Lo que debe es más que su mitad de hoy: se descuenta lo que alcanza y el resto queda pendiente para los próximos días.");
+    notas.push(r.dest === "dueno"
       ? "Las transferencias ya están en la cuenta del dueño, por eso se restan."
-      : "Las transferencias llegan a la cuenta del trabajador, así que entrega la parte del dueño en efectivo o por transferencia.";
+      : "Las transferencias llegan a la cuenta del trabajador; entrega la parte del dueño en efectivo o por transferencia.");
+    $("rNota").textContent = notas.join(" ");
   }
 
   function puedeBorrar(r) {
@@ -392,13 +410,22 @@
   async function cargarHist() {
     if (!esDueno()) return;
     try {
-      const r = await rpc("exportar", { p_pin: S.pin, p_desde: shiftDate(S.hoy, -90), p_hasta: S.hoy });
+      const desde = shiftDate(S.hoy, -90);
+      const [r, sal] = await Promise.all([
+        rpc("exportar", { p_pin: S.pin, p_desde: desde, p_hasta: S.hoy }),
+        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: desde }).catch(() => null)
+      ]);
       const map = {};
       (r.registros || []).forEach(x => { (map[x.fecha] = map[x.fecha] || []).push(x); });
-      S.dias = Object.keys(map).sort().reverse().map(f => {
+      let prev = sal && typeof sal.saldo === "number" ? sal.saldo : 0;
+      const dias = Object.keys(map).sort().map(f => {
         const t = totals(map[f]);
-        return { fecha: f, ventas: t.total, gastos: t.prest, carros: t.carros + t.motos, transf: t.transf, entregar: calcReparto(t).entregar, mitad: t.total / 2 };
+        const rp = calcReparto(t, prev);
+        prev = rp.pendiente;
+        return { fecha: f, ventas: t.total, gastos: t.prest, descuento: rp.descuento, pendiente: rp.pendiente, carros: t.vehiculos, transf: t.transf, entregar: rp.entregar, mitad: rp.mitad };
       });
+      S.saldoActual = prev;
+      S.dias = dias.reverse();
       renderHist();
     } catch (e) { banner(e.message); }
   }
@@ -411,14 +438,17 @@
     const mes = hoy.slice(0, 7); let sm = 0, cm = 0, dm = 0, gm = 0;
     S.dias.forEach(d => { if (d.fecha.slice(0, 7) === mes) { sm += Number(d.ventas); cm += Number(d.carros); gm += Number(d.gastos); if (Number(d.ventas) > 0) dm++; } });
     $("sMes").textContent = money(sm); $("sMesc").textContent = `${cm} vehículos`;
-    const pm = S.dias.filter(d => d.fecha.slice(0, 7) === mes).reduce((a, d) => a + d.mitad + d.gastos, 0);
-    $("sPrest").textContent = money(pm); $("sPrestc").textContent = gm ? `mitad + ${money(gm)} de descuentos` : "tu mitad del mes";
+    const delMes = S.dias.filter(d => d.fecha.slice(0, 7) === mes);
+    const pm = delMes.reduce((a, d) => a + d.mitad + d.descuento, 0);
+    const dm2 = delMes.reduce((a, d) => a + d.descuento, 0);
+    $("sPrest").textContent = money(pm);
+    $("sPrestc").textContent = (dm2 ? `mitad + ${money(dm2)} descontados` : "tu mitad del mes") + (S.saldoActual ? ` · él aún debe ${money(S.saldoActual)}` : "");
     const days = []; for (let i = 13; i >= 0; i--) days.push(shiftDate(hoy, -i));
     const max = Math.max(1, ...days.map(v));
     $("bars").innerHTML = days.map(f => `<div class="b ${f === hoy ? "hoy" : ""}" title="${esc(prettyDate(f))}: ${money(v(f))}"><i style="height:${(v(f) / max * 100).toFixed(1)}%"></i></div>`).join("");
     $("axis").innerHTML = days.map(f => `<span>${Number(f.slice(8))}</span>`).join("");
     $("histBody").innerHTML = S.dias.length ? S.dias.map(d => {
-      return `<tr class="click" data-f="${d.fecha}"><td>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}</td><td>${d.carros}</td><td><b>${money(Number(d.ventas))}</b></td><td>${Number(d.gastos) ? money(Number(d.gastos)) : "—"}</td><td class="${d.entregar < 0 ? "neg" : ""}"><b>${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}</b></td></tr>`;
+      return `<tr class="click" data-f="${d.fecha}"><td>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}</td><td>${d.carros}</td><td><b>${money(Number(d.ventas))}</b></td><td>${d.descuento ? money(d.descuento) : "—"}</td><td class="${d.entregar < 0 ? "neg" : ""}"><b>${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}</b></td></tr>`;
     }).join("") : `<tr><td colspan="5" style="text-align:left;color:var(--ink-2)">Aún no hay días registrados.</td></tr>`;
     $("histBody").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => { setTab("dia"); setFecha(tr.dataset.f); window.scrollTo(0, 0); }));
   }
