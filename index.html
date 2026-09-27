@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Caja del Lavadero</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="app.css?v=2026-09-27_11:30">
+<link rel="stylesheet" href="app.css?v=2026-09-27_11:36">
 </head>
 <body>
 
@@ -57,8 +57,8 @@
         <div class="amount num" id="totVentas">$ 0</div>
       </div>
       <div class="row row4 num">
-        <div><span class="label">Carros</span><b id="totCarros">0</b></div>
-        <div><span class="label">Motos</span><b id="totMotos">0</b></div>
+        <div><span class="label">Vehículos</span><b id="totCarros">0</b></div>
+        <div><span class="label">Detalle</span><span class="desglose" id="totMotos">—</span></div>
         <div><span class="label">Efectivo</span><b id="totEfectivo">$ 0</b></div>
         <div><span class="label">Transferencia</span><b id="totTransf">$ 0</b></div>
       </div>
@@ -80,11 +80,20 @@
     <form class="panel" id="form" autocomplete="off">
       <div class="veh" role="group" aria-label="Vehículo">
         <button type="button" class="vehbtn" data-veh="Carro" aria-pressed="true">
-          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M3 20v-4l6-8c1-1.3 2-2 4-2h14c2 0 3 .7 4 2l5 6h6a2 2 0 012 2v4z"/><circle cx="13" cy="21" r="5"/><circle cx="36" cy="21" r="5"/><circle cx="13" cy="21" r="2.2" class="hole"/><circle cx="36" cy="21" r="2.2" class="hole"/><path d="M13 9h6v5h-9zM22 9h5l4 5h-9z" class="hole"/></svg>
+          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M3 20v-4l6-8c1-1.3 2-2 4-2h14c2 0 3 .7 4 2l5 6h6a2 2 0 012 2v4z"/><circle cx="13" cy="21" r="5"/><circle cx="13" cy="21" r="2.2" class="hole"/><circle cx="36" cy="21" r="5"/><circle cx="36" cy="21" r="2.2" class="hole"/><path d="M13 9h6v5h-9zM22 9h5l4 5h-9z" class="hole"/></svg>
           Carro</button>
         <button type="button" class="vehbtn" data-veh="Moto" aria-pressed="false">
           <svg viewBox="0 0 48 28" aria-hidden="true"><circle cx="10" cy="19" r="7"/><circle cx="38" cy="19" r="7"/><circle cx="10" cy="19" r="3.4" class="hole"/><circle cx="38" cy="19" r="3.4" class="hole"/><path d="M10 19l8-9h9l4 5 7 4-2 2-8-3H20z"/><path d="M29 6h6v3h-6z"/></svg>
           Moto</button>
+        <button type="button" class="vehbtn" data-veh="Mototaxi" aria-pressed="false">
+          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M8 3h30v3H8z"/><path d="M9 6h3v8H9zM34 6h3v8h-3z"/><path d="M6 14h32l4 5v3H6z"/><path d="M38 9h5v2h-5z"/><circle cx="12" cy="22" r="4.5"/><circle cx="12" cy="22" r="2" class="hole"/><circle cx="38" cy="22" r="4.5"/><circle cx="38" cy="22" r="2" class="hole"/></svg>
+          Mototaxi</button>
+        <button type="button" class="vehbtn" data-veh="Turbo" aria-pressed="false">
+          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M2 4h28v16H2z"/><path d="M31 9h9l6 6v6H31z"/><path d="M34 11h5l4 4h-9z" class="hole"/><circle cx="10" cy="22" r="4.5"/><circle cx="10" cy="22" r="2" class="hole"/><circle cx="38" cy="22" r="4.5"/><circle cx="38" cy="22" r="2" class="hole"/></svg>
+          Turbo</button>
+        <button type="button" class="vehbtn" data-veh="Motocarguero" aria-pressed="false">
+          <svg viewBox="0 0 48 28" aria-hidden="true"><path d="M2 9h24v10H2z"/><path d="M26 15h8l5-7h4l-4 9 4 2v2H26z"/><path d="M36 5h6v3h-6z"/><circle cx="9" cy="22" r="4.5"/><circle cx="9" cy="22" r="2" class="hole"/><circle cx="40" cy="22" r="4.5"/><circle cx="40" cy="22" r="2" class="hole"/></svg>
+          Motocarguero</button>
       </div>
 
       <label class="field"><span>Valor</span>
@@ -185,7 +194,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-09-27_11:30"></script>
-<script src="app.js?v=2026-09-27_11:30"></script>
+<script src="config.js?v=2026-09-27_11:36"></script>
+<script src="app.js?v=2026-09-27_11:36"></script>
 </body>
 </html>

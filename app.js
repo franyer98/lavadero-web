@@ -2,10 +2,11 @@
   "use strict";
   const CFG = window.LAVADERO_CONFIG || {};
   const TZ = "America/Bogota";
-  const VEHICULOS = ["Carro", "Camioneta", "Moto", "Buseta/Van", "Otro"];
+  const VEHICULOS = ["Carro", "Moto", "Mototaxi", "Turbo", "Motocarguero"];
+  const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 11:30";
+  const APP_VERSION = "2026-09-27 11:36";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -171,15 +172,16 @@
   }
 
   function totals(regs) {
-    let total = 0, carros = 0, motos = 0, efectivo = 0, transf = 0, prest = 0;
+    let total = 0, carros = 0, motos = 0, efectivo = 0, transf = 0, prest = 0; const porTipo = {};
     (regs || []).forEach(r => {
       if (r.tipo === "gasto") { prest += r.valor || 0; return; }
       const v = r.valor || 0;
       total += v;
       if (r.vehiculo === "Moto") motos++; else carros++;
+      const tipo = r.vehiculo || "Carro"; porTipo[tipo] = (porTipo[tipo] || 0) + 1;
       if (r.pago === "Transferencia") transf += v; else efectivo += v;
     });
-    return { total, carros, motos, efectivo, transf, prest };
+    return { total, carros, motos, efectivo, transf, prest, porTipo, vehiculos: carros + motos };
   }
 
   // ---------- Reparto mitad y mitad ----------
@@ -230,8 +232,9 @@
     const esHoy = S.fecha === S.hoy;
     $("ticketFecha").textContent = (esHoy ? "Hoy · " : "") + prettyDate(S.fecha);
     $("totVentas").textContent = money(t.total);
-    $("totCarros").textContent = t.carros;
-    $("totMotos").textContent = t.motos;
+    $("totCarros").textContent = t.vehiculos;
+    const orden = VEHICULOS.concat(Object.keys(t.porTipo).filter(k => !VEHICULOS.includes(k)));
+    $("totMotos").textContent = orden.filter(k => t.porTipo[k]).map(k => `${t.porTipo[k]} ${t.porTipo[k] === 1 ? k.toLowerCase() : (PLURAL[k] || k.toLowerCase() + "s")}`).join(" · ") || "—";
     $("totEfectivo").textContent = money(t.efectivo);
     $("totTransf").textContent = money(t.transf);
     renderReparto(t);
@@ -263,7 +266,7 @@
     const e = S.edit, g = r.tipo === "gasto";
     const btn = (attr, val, cur, label) => `<button type="button" class="opt" data-${attr}="${val}" aria-pressed="${val === cur}">${label}</button>`;
     return `<div class="editor">
-      ${g ? "" : `<div class="opts">${btn("ev", "Carro", e.vehiculo, "Carro")}${btn("ev", "Moto", e.vehiculo, "Moto")}</div>`}
+      ${g ? "" : `<div class="opts">${VEHICULOS.map(v => btn("ev", v, e.vehiculo, v)).join("")}</div>`}
       <label class="field"><span>Valor</span><input id="edValor" class="money num" inputmode="numeric" value="${money(e.valor)}"></label>
       ${g ? `<label class="field"><span>Motivo</span><input id="edNota" maxlength="80" value="${esc(e.nota || "")}"></label>`
           : `<div class="opts">${btn("ep", "Efectivo", e.pago, "Efectivo")}${btn("ep", "Transferencia", e.pago, "Transferencia")}</div>`}
