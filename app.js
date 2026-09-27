@@ -5,7 +5,7 @@
   const VEHICULOS = ["Carro", "Camioneta", "Moto", "Buseta/Van", "Otro"];
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 11:24";
+  const APP_VERSION = "2026-09-27 11:30";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -480,6 +480,7 @@
 
   // ---------- Arranque ----------
   $("appVer").textContent = "Versión " + APP_VERSION;
+  $("appVer2").textContent = "Versión " + APP_VERSION;
   if (!CFG.SUPABASE_URL || !CFG.SUPABASE_KEY || CFG.SUPABASE_KEY.startsWith("PEGAR")) {
     mostrarLogin(); $("loginErr").textContent = "Falta configurar la conexión (config.js).";
   } else if (S.pin) {
