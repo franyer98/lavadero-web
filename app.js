@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 12:36";
+  const APP_VERSION = "2026-09-27 21:16";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -335,6 +335,29 @@
   $("nextDay").addEventListener("click", () => setFecha(shiftDate(S.fecha, 1)));
   $("goToday").addEventListener("click", () => setFecha(S.hoy));
 
+  // ---------- Voz ----------
+  const ARTICULO = { Carro: "un carro", Moto: "una moto", Mototaxi: "un mototaxi", Turbo: "un turbo", Motocarguero: "un motocarguero" };
+  function valorHablado(n) {
+    n = Math.round(n);
+    if (n >= 1000000 && n % 1000 === 0) return (n / 1000000).toLocaleString("es-CO") + (n === 1000000 ? " millón" : " millones") + " de pesos";
+    if (n % 1000 === 0) return (n / 1000) + " mil pesos";
+    return n + " pesos";
+  }
+  async function hablar(texto) {
+    try {
+      const TTS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.TextToSpeech;
+      if (TTS && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        await TTS.stop().catch(() => {});
+        await TTS.speak({ text: texto, lang: "es-CO", rate: 1.0, pitch: 1.0, volume: 1.0, category: "playback" });
+        return;
+      }
+      if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(texto); u.lang = "es-CO"; speechSynthesis.speak(u);
+      }
+    } catch (e) { /* sin voz disponible: no pasa nada */ }
+  }
+
   // ---------- Formulario ----------
   function renderForm() {
     document.querySelectorAll(".vehbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.veh === S.veh)));
@@ -375,6 +398,7 @@
     try {
       await rpc("agregar", { p_pin: S.pin, p });
       toast(abono ? `Abono de ${money(valor)} registrado` : `Préstamo de ${money(valor)} registrado`);
+      hablar(abono ? `Registraste un abono de ${valorHablado(valor)}.` : `Registraste un préstamo de ${valorHablado(valor)}.`);
       $("prestValor").value = ""; $("prestNota").value = "";
       $("prestHint").textContent = "Es una cuenta aparte: no se mezcla con la caja ni con el reparto del día.";
       prestTipo = "prestamo"; drawPrestTipo(); cerrarPrest();
@@ -397,6 +421,7 @@
     try {
       await rpc("agregar", { p_pin: S.pin, p });
       toast(`${S.veh} ${money(valor)} guardado`);
+      hablar(`Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
       setValor(0); S.pago = "Efectivo"; renderForm();
       await cargarDia(true);
     } catch (e) {
