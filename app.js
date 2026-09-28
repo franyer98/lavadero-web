@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-28 07:33";
+  const APP_VERSION = "2026-09-28 08:03";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -14,7 +14,6 @@
     SOLO_DUENO: "Solo el dueño puede hacer eso.",
     NO_PERMITIDO: "Solo puedes cambiar o borrar tus registros de los últimos 15 minutos. Pídeselo al dueño.",
     NO_EXISTE: "Ese registro ya no existe.",
-    YA_CONFIRMADO: "El dueño ya confirmó el cierre de hoy.",
     VALOR_INVALIDO: "Escribe un valor mayor a cero.",
     PIN_4_A_6_DIGITOS: "El PIN debe tener entre 4 y 6 dígitos.",
     PIN_REPETIDO: "Ese PIN ya lo usa la otra persona. Elige otro.",
@@ -195,12 +194,10 @@
     const f = S.fecha, my = ++cargando;
     if (!silencioso) $("syncState").textContent = "Cargando…";
     try {
-      const [r, sal, caja] = await Promise.all([
+      const [r, sal] = await Promise.all([
         rpc("ver_dia", { p_pin: S.pin, p_fecha: f }),
-        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: f }).catch(() => null),
-        rpc("estado_caja", { p_pin: S.pin, p_fecha: f }).catch(() => null)
+        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: S.hoy }).catch(() => null)
       ]);
-      S.caja = caja && caja.fecha ? caja : null;
       if (my !== cargando) return;
       S.saldo = sal && typeof sal.saldo === "number" ? sal.saldo : null;
       renderSaldo();
@@ -222,9 +219,8 @@
       if (JSON.stringify(nuevoCfg) !== JSON.stringify(S.cfg)) { S.cfg = nuevoCfg; renderBrand(); renderForm(); }
       banner("");
       $("syncState").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
-      recordarCierre();
       if (S.edit && silencioso) return; // no interrumpir mientras se edita
-      if (silencioso && (cierreEditando || (document.activeElement && /^(cierreValor|cierreNota|recibidoValor)$/.test(document.activeElement.id)))) return;
+      if (silencioso && document.activeElement && /^(movValor|ajusteValor)$/.test(document.activeElement.id)) return;
       renderDia();
     } catch (e) {
       if (my !== cargando) return;
@@ -284,75 +280,6 @@
     $("saldoMini").textContent = s == null ? "" : (s > 0 ? `· debe ${money(s)}` : "· al día");
   }
 
-  // ---------- Cierre de caja ----------
-  const horaBogota = () => Number(new Date().toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hour12: false }));
-  let cierreEditando = false;
-  function renderCierre() {
-    const box = $("cierreBox"), c = S.caja;
-    const debeBox = document.querySelector("#reparto .debe");
-    if (debeBox) debeBox.hidden = !!c;   // con cierre activo, el valor a entregar se muestra solo en el cierre
-    if (!c) { box.hidden = true; return; }
-    box.hidden = false;
-    const cierre = c.cierre, pend = Number(c.pendiente_antes) || 0, debeHoy = Number(c.debe_hoy) || 0, total = debeHoy + pend;
-    const esHoy = S.fecha === S.hoy, tarde = esHoy && horaBogota() >= 20;
-    box.classList.toggle("alerta", !cierre && tarde);
-    const filas = [[esDueno() ? "Te debe entregar hoy" : "Debes entregar hoy", money(debeHoy)]];
-    if (pend) filas.push([pend > 0 ? "Pendiente de días anteriores" : "A favor de días anteriores", (pend > 0 ? "" : "−") + money(Math.abs(pend))]);
-    if (pend) filas.push(["Total a entregar", money(total), "fuerte"]);
-    const tabla = `<dl>${filas.map(([k, v, cl]) => `<div class="${cl || ""}"><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
-    const hora = t => t ? new Date(t).toLocaleTimeString("es-CO", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) : "";
-    let cuerpo = "";
-    if (!cierre || cierreEditando) {
-      cuerpo = `<label class="field"><span>${esDueno() ? "Valor que recibiste" : "Valor que entregas"}</span>
-          <input id="cierreValor" class="money num" inputmode="decimal" value="${total > 0 ? pesosAMiles(total) : ""}" placeholder="En miles: 12 = $12.000"><small class="miles-prev">${total > 0 ? "= " + money(total) : ""}</small></label>
-        <label class="field"><span>Nota (opcional)</span><input id="cierreNota" maxlength="120" placeholder="Ej. faltaron 5 mil, los traigo mañana"></label>
-        <button type="button" class="primary" id="cierreBtn">${esDueno() ? "Cerrar caja (recibido)" : "Cerrar caja: entregué este valor"}</button>
-        ${cierreEditando ? '<button type="button" class="linkbtn" id="cierreCancelar">Cancelar</button>' : ""}
-        <p class="hint">${tarde ? "Ya son más de las 8 p. m.: es hora de cerrar la caja." : "El cierre se hace a las 8 p. m."}</p>`;
-    } else {
-      const recibido = cierre.estado === "recibido";
-      const pagado = recibido ? cierre.recibido : cierre.entregado;
-      const falta = total - pagado;
-      cuerpo = `<div class="estado ${recibido ? "ok" : "espera"}">
-          ${recibido ? `✓ Recibido ${money(cierre.recibido)} <small>${hora(cierre.recibido_en)}</small>` : `Entregó ${money(cierre.entregado)} <small>${hora(cierre.entregado_en)}</small>`}
-        </div>
-        ${falta > 0 ? `<p class="falta">Faltan ${money(falta)}: quedan pendientes para mañana.</p>` : falta < 0 ? `<p class="hint">Entregó ${money(-falta)} de más: queda a su favor.</p>` : ""}
-        ${cierre.nota ? `<p class="hint">Nota: ${esc(cierre.nota)}</p>` : ""}
-        ${!recibido && esDueno() ? `<label class="field"><span>Valor que recibiste</span><input id="recibidoValor" class="money num" inputmode="decimal" value="${pesosAMiles(cierre.entregado)}"><small class="miles-prev">= ${money(cierre.entregado)}</small></label>
-            <button type="button" class="primary" id="confirmarBtn">Confirmar recibido</button>` : ""}
-        ${!recibido && !esDueno() ? `<p class="hint">Esperando que el dueño confirme.</p><button type="button" class="linkbtn" id="cierreCorregir">Corregir valor</button>` : ""}
-        ${recibido && esDueno() ? `<button type="button" class="linkbtn" id="cierreCorregir">Cambiar</button>` : ""}`;
-    }
-    box.innerHTML = `<h2>Cierre de caja</h2>${tabla}${cuerpo}`;
-    const val = id => milesAPesos($(id).value);
-    if ($("cierreBtn")) $("cierreBtn").onclick = async () => {
-      const v = val("cierreValor");
-      $("cierreBtn").disabled = true;
-      try {
-        await rpc("cerrar_caja", { p_pin: S.pin, p_entregado: v, p_nota: $("cierreNota").value.trim(), p_fecha: S.fecha });
-        cierreEditando = false; toast("Caja cerrada");
-        if (!esDueno()) hablar(`Cerraste la caja. Entregaste ${valorHablado(v)}.`); else campanita();
-        await cargarDia(true);
-      } catch (e) { toast(e.message); $("cierreBtn").disabled = false; }
-    };
-    if ($("confirmarBtn")) $("confirmarBtn").onclick = async () => {
-      $("confirmarBtn").disabled = true;
-      try { await rpc("confirmar_cierre", { p_pin: S.pin, p_fecha: S.fecha, p_recibido: val("recibidoValor") }); toast("Cierre confirmado"); await cargarDia(true); }
-      catch (e) { toast(e.message); $("confirmarBtn").disabled = false; }
-    };
-    if ($("cierreCorregir")) $("cierreCorregir").onclick = () => { cierreEditando = true; renderCierre(); };
-    if ($("cierreCancelar")) $("cierreCancelar").onclick = () => { cierreEditando = false; renderCierre(); };
-  }
-  // Recordatorio de las 8 p. m. en el celular del trabajador (si tiene la app abierta)
-  function recordarCierre() {
-    if (esDueno() || !S.caja || S.caja.cierre || S.fecha !== S.hoy || horaBogota() < 20) return;
-    const k = "lav_recordado_" + S.hoy;
-    if (lsGet(k)) return;
-    lsSet(k, "1");
-    banner("Son las 8 p. m.: cierra la caja abajo, en «Cierre de caja».");
-    hablar("Son las ocho de la noche. Es hora de cerrar la caja.");
-  }
-
   function puedeBorrar(r) {
     if (esDueno()) return true;
     return r.rol === "trabajador" && (Date.now() - new Date(r.creado).getTime()) < 15 * 60 * 1000;
@@ -370,7 +297,6 @@
     $("totEfectivo").textContent = money(t.efectivo);
     $("totTransf").textContent = money(t.transf);
     renderReparto(t);
-    renderCierre();
     const nLav = t.carros + t.motos;
     $("listSub").textContent = regs.length ? `${nLav} ${nLav === 1 ? "lavado" : "lavados"}${(t.prest || t.abonos) ? " · préstamos" : ""} · más reciente arriba` : "";
     $("form").hidden = esDueno() && S.fecha > S.hoy;
@@ -527,35 +453,96 @@
     const f = $("prestForm"), open = f.hidden;
     f.hidden = !open; $("abrirPrest").setAttribute("aria-expanded", String(open));
     $("abrirPrest").querySelector(".chev").textContent = open ? "−" : "+";
-    if (open) $("prestValor").focus();
+    if (open) { cargarMovs(); }
   });
 
   function cerrarPrest() { $("prestForm").hidden = true; $("abrirPrest").setAttribute("aria-expanded", "false"); $("abrirPrest").querySelector(".chev").textContent = "+"; }
+  // Movimientos de préstamos (solo dueño): ver, corregir o borrar cualquier préstamo o abono
+  let movEdit = null, movArmed = false;
+  async function cargarMovs() {
+    if (!esDueno()) return;
+    try {
+      const r = await rpc("exportar", { p_pin: S.pin, p_desde: "2020-01-01", p_hasta: S.hoy });
+      S.movs = (r.registros || []).filter(x => x.tipo === "gasto").reverse().slice(0, 40);
+      renderMovs();
+    } catch (e) { $("movs").innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+  }
+  function renderMovs() {
+    const box = $("movs"); if (!box || !S.movs) return;
+    if (!S.movs.length) { box.innerHTML = '<h3>Movimientos</h3><p class="hint">No hay préstamos ni abonos registrados.</p>'; return; }
+    box.innerHTML = '<h3>Movimientos</h3>' + S.movs.map(m => {
+      const ab = esAbono(m), ed = movEdit === m.id;
+      return `<div class="mov ${ab ? "ab" : "pr"}">
+        <div class="mov-l"><b>${ab ? "Abono" : "Préstamo"}</b><span>${esc(prettyDate(m.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}${m.nota ? " · " + esc(m.nota) : ""}</span></div>
+        <div class="mov-r"><b>${ab ? "+" : "−"}${money(m.valor)}</b>${ed ? "" : `<button type="button" class="edit-btn" data-mov="${esc(m.id)}">Editar</button>`}</div>
+        ${ed ? `<div class="mov-ed">
+          <label class="field"><span>Valor (en miles)</span><input id="movValor" class="money num" inputmode="decimal" value="${pesosAMiles(m.valor)}"><small class="miles-prev">= ${money(m.valor)}</small></label>
+          <label class="field"><span>Nota</span><input id="movNota" maxlength="80" value="${esc(m.nota || "")}"></label>
+          <div class="edit-actions">
+            <button type="button" class="primary" data-mact="save">Guardar</button>
+            <button type="button" class="danger-o ${movArmed ? "arm" : ""}" data-mact="del">${movArmed ? "¿Seguro? Toca otra vez" : "Borrar"}</button>
+            <button type="button" class="linkbtn" data-mact="cancel">Cancelar</button>
+          </div></div>` : ""}
+      </div>`;
+    }).join("");
+  }
+  $("movs").addEventListener("click", async ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    ev.preventDefault();
+    if (b.dataset.mov) { movEdit = b.dataset.mov; movArmed = false; renderMovs(); return; }
+    const act = b.dataset.mact; if (!act) return;
+    if (act === "cancel") { movEdit = null; renderMovs(); return; }
+    if (act === "del" && !movArmed) { movArmed = true; renderMovs(); return; }
+    b.disabled = true;
+    try {
+      if (act === "del") { await rpc("borrar", { p_pin: S.pin, p_id: movEdit }); toast("Movimiento borrado"); }
+      else {
+        const v = milesAPesos($("movValor").value);
+        if (!v) { toast("Escribe el valor"); b.disabled = false; return; }
+        await rpc("editar", { p_pin: S.pin, p_id: movEdit, p: { valor: v, nota: $("movNota").value.trim() } });
+        toast("Movimiento corregido");
+      }
+      movEdit = null; movArmed = false;
+      await cargarDia(true); await cargarMovs();
+    } catch (e) { toast(e.message); b.disabled = false; }
+  });
+
   let prestTipo = "prestamo";
   function drawPrestTipo() {
     document.querySelectorAll("#prestTipo .opt").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pt === prestTipo)));
-    $("prestValorLbl").textContent = prestTipo === "abono" ? "Valor que pagó" : "Valor que se llevó";
-    $("guardarPrest").textContent = prestTipo === "abono" ? "Registrar abono" : "Registrar préstamo";
-    $("guardarPrest").className = prestTipo === "abono" ? "primary" : "danger";
+    const aj = prestTipo === "ajuste";
+    $("prestValorLbl").textContent = aj ? "Nuevo saldo que debe (en miles, 0 si ya no debe)" : prestTipo === "abono" ? "Valor que pagó" : "Valor que se llevó";
+    $("guardarPrest").textContent = aj ? "Guardar nuevo saldo" : prestTipo === "abono" ? "Registrar abono" : "Registrar préstamo";
+    $("guardarPrest").className = prestTipo === "prestamo" ? "danger" : "primary";
   }
   document.querySelectorAll("#prestTipo .opt").forEach(b => b.addEventListener("click", () => { prestTipo = b.dataset.pt; drawPrestTipo(); }));
   $("prestForm").addEventListener("submit", async ev => {
     ev.preventDefault();
-    const valor = milesAPesos($("prestValor").value);
+    let valor = milesAPesos($("prestValor").value);
+    let nota = $("prestNota").value.trim();
+    let abono = prestTipo === "abono" && esDueno();
+    if (prestTipo === "ajuste" && esDueno()) {
+      if (S.saldo == null) { $("prestHint").textContent = "Aún no se pudo leer el saldo actual. Intenta de nuevo."; return; }
+      const txt = $("prestValor").value.trim();
+      if (txt === "") { $("prestHint").textContent = "Escribe el nuevo saldo (0 si ya no debe)."; return; }
+      const nuevo = /^0+([.,]0*)?$/.test(txt) ? 0 : milesAPesos(txt);
+      const dif = nuevo - S.saldo;
+      if (!dif) { $("prestHint").textContent = "El saldo ya es " + money(nuevo) + "."; return; }
+      abono = dif < 0; valor = Math.abs(dif);
+      nota = ("Ajuste de saldo a " + money(nuevo) + (nota ? " · " + nota : "")).slice(0, 80);
+    }
     if (!valor) { $("prestHint").textContent = "Escribe el valor."; $("prestValor").focus(); return; }
-    const nota = $("prestNota").value.trim();
-    const abono = prestTipo === "abono" && esDueno();
     const p = { tipo: "gasto", concepto: abono ? "Abono préstamo" : "Préstamo trabajador", nota, valor, pago: "Efectivo" };
-    if (esDueno() && S.fecha !== S.hoy) p.fecha = S.fecha;
+    if (esDueno() && S.fecha !== S.hoy && prestTipo !== "ajuste") p.fecha = S.fecha;
     $("guardarPrest").disabled = true;
     try {
       await rpc("agregar", { p_pin: S.pin, p });
-      toast(abono ? `Abono de ${money(valor)} registrado` : `Préstamo de ${money(valor)} registrado`);
+      toast(prestTipo === "ajuste" ? "Saldo ajustado" : abono ? `Abono de ${money(valor)} registrado` : `Préstamo de ${money(valor)} registrado`);
       avisarGuardado(abono ? `Registraste un abono de ${valorHablado(valor)}.` : `Registraste un préstamo de ${valorHablado(valor)}.`);
       $("prestValor").value = ""; $("prestNota").value = "";
       $("prestHint").textContent = "Es una cuenta aparte: no se mezcla con la caja ni con el reparto del día.";
       prestTipo = "prestamo"; drawPrestTipo(); cerrarPrest();
-      await cargarDia(true);
+      await cargarDia(true); S.movs = null;
     } catch (e) { $("prestHint").textContent = "No se guardó. " + e.message; }
     finally { $("guardarPrest").disabled = false; }
   });
@@ -587,18 +574,16 @@
     if (!esDueno()) return;
     try {
       const desde = shiftDate(S.hoy, -90);
-      const [r, sal, lc] = await Promise.all([
+      const [r, sal] = await Promise.all([
         rpc("exportar", { p_pin: S.pin, p_desde: desde, p_hasta: S.hoy }),
-        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: S.hoy }).catch(() => null),
-        rpc("lista_cierres", { p_pin: S.pin, p_desde: desde, p_hasta: S.hoy }).catch(() => null)
+        rpc("saldo_prestamos", { p_pin: S.pin, p_fecha: S.hoy }).catch(() => null)
       ]);
-      const cmap = {}; ((lc && lc.cierres) || []).forEach(c => (cmap[c.fecha] = c));
       const map = {};
       (r.registros || []).forEach(x => { (map[x.fecha] = map[x.fecha] || []).push(x); });
       S.saldoActual = sal && typeof sal.saldo === "number" ? sal.saldo : null;
       S.dias = Object.keys(map).sort().reverse().map(f => {
         const t = totals(map[f]); const rp = calcReparto(t);
-        return { fecha: f, ventas: t.total, prest: t.prest, abonos: t.abonos, carros: t.vehiculos, transf: t.transf, entregar: rp.entregar, mitad: rp.mitad, cierre: cmap[f] };
+        return { fecha: f, ventas: t.total, prest: t.prest, abonos: t.abonos, carros: t.vehiculos, transf: t.transf, entregar: rp.entregar, mitad: rp.mitad };
       });
       renderHist();
     } catch (e) { banner(e.message); }
@@ -619,8 +604,8 @@
     $("bars").innerHTML = days.map(f => `<div class="b ${f === hoy ? "hoy" : ""}" title="${esc(prettyDate(f))}: ${money(v(f))}"><i style="height:${(v(f) / max * 100).toFixed(1)}%"></i></div>`).join("");
     $("axis").innerHTML = days.map(f => `<span>${Number(f.slice(8))}</span>`).join("");
     $("histBody").innerHTML = S.dias.length ? S.dias.map(d => {
-      return `<tr class="click" data-f="${d.fecha}"><td>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}</td><td>${d.carros}</td><td><b>${money(Number(d.ventas))}</b></td><td>${d.prest || d.abonos ? [d.prest ? "−" + money(d.prest) : "", d.abonos ? "+" + money(d.abonos) : ""].filter(Boolean).join(" ") : "—"}</td><td class="${d.entregar < 0 ? "neg" : ""}"><b>${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}</b></td><td>${d.cierre ? (d.cierre.estado === "recibido" ? "✓ " + money(d.cierre.recibido) : "Entregó " + money(d.cierre.entregado)) : '<span class="neg">Sin cierre</span>'}</td></tr>`;
-    }).join("") : `<tr><td colspan="6" style="text-align:left;color:var(--ink-2)">Aún no hay días registrados.</td></tr>`;
+      return `<tr class="click" data-f="${d.fecha}"><td>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}</td><td>${d.carros}</td><td><b>${money(Number(d.ventas))}</b></td><td>${d.prest || d.abonos ? [d.prest ? "−" + money(d.prest) : "", d.abonos ? "+" + money(d.abonos) : ""].filter(Boolean).join(" ") : "—"}</td><td class="${d.entregar < 0 ? "neg" : ""}"><b>${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}</b></td></tr>`;
+    }).join("") : `<tr><td colspan="5" style="text-align:left;color:var(--ink-2)">Aún no hay días registrados.</td></tr>`;
     $("histBody").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => { setTab("dia"); setFecha(tr.dataset.f); window.scrollTo(0, 0); }));
   }
 

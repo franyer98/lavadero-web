@@ -242,3 +242,14 @@ td.neg{color:var(--bad)}
 .cierre .hint{margin:0}
 .cierre .linkbtn{justify-self:start;color:var(--ink-2)}
 .miles-prev{display:block;margin-top:4px;font-weight:700;color:var(--petrol);font-size:15px}.money::placeholder{font-size:16px;font-family:var(--body);font-weight:500}
+
+/* Movimientos de préstamos */
+.movs{display:grid;gap:0;margin-top:6px;border-top:1px solid var(--line)}
+.movs h3{margin:12px 0 4px;font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.03em}
+.mov{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.mov-l{min-width:0}.mov-l b{display:block}.mov-l span{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.mov-r{text-align:right}.mov-r b{font-family:var(--display);font-size:18px;display:block}
+.mov.pr .mov-r b{color:var(--bad)}.mov.ab .mov-r b{color:var(--good)}
+.mov-ed{grid-column:1/-1;display:grid;gap:10px;background:var(--surface-2);padding:12px;border-radius:10px}
+#prestTipo{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+#prestTipo .opt{font-size:14px;padding:0 4px}
