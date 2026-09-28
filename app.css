@@ -253,3 +253,9 @@ td.neg{color:var(--bad)}
 .mov-ed{grid-column:1/-1;display:grid;gap:10px;background:var(--surface-2);padding:12px;border-radius:10px}
 #prestTipo{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
 #prestTipo .opt{font-size:14px;padding:0 4px}
+
+/* Fotos de vehículos */
+.vehbtn img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:9px;background:var(--surface-2)}
+.veh .vehbtn{padding:6px 6px 10px;gap:6px}
+.vehbtn[aria-pressed="true"] img{outline:3px solid var(--wax);outline-offset:-3px}
+.creditos .hint{line-height:1.5}
