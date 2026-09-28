@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 21:16";
+  const APP_VERSION = "2026-09-27 21:23";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -161,7 +161,19 @@
       if (my !== cargando) return;
       S.saldo = sal && typeof sal.saldo === "number" ? sal.saldo : null;
       renderSaldo();
-      S.registros = r.registros || []; S.hoy = r.hoy;
+      const nuevos = r.registros || [];
+      if (esDueno() && S.vistos && S.vistosFecha === f && f === r.hoy) {
+        const delTrab = nuevos.filter(x => !S.vistos.has(x.id) && x.rol === "trabajador");
+        if (delTrab.length) {
+          campanita();
+          const x = delTrab[0];
+          toast(x.tipo === "gasto"
+            ? `El trabajador registró ${esAbono(x) ? "un abono" : "un préstamo"} de ${money(x.valor)}`
+            : `El trabajador agregó ${ARTICULO[x.vehiculo] || x.vehiculo} de ${money(x.valor)}${delTrab.length > 1 ? ` (+${delTrab.length - 1} más)` : ""}`);
+        }
+      }
+      S.vistos = new Set(nuevos.map(x => x.id)); S.vistosFecha = f;
+      S.registros = nuevos; S.hoy = r.hoy;
       if (!esDueno()) S.fecha = r.fecha;
       const nuevoCfg = normCfg(r.config);
       if (JSON.stringify(nuevoCfg) !== JSON.stringify(S.cfg)) { S.cfg = nuevoCfg; renderBrand(); renderForm(); }
@@ -358,6 +370,33 @@
     } catch (e) { /* sin voz disponible: no pasa nada */ }
   }
 
+  // Sonido de aviso para el dueño (sin voz)
+  let audioCtx = null;
+  function prepararAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {}
+  }
+  document.addEventListener("pointerdown", prepararAudio, { passive: true });
+  function campanita() {
+    try {
+      prepararAudio(); if (!audioCtx) return;
+      const t0 = audioCtx.currentTime;
+      [[880, 0], [1320, 0.16]].forEach(([f, d]) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0 + d);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.45);
+        o.connect(g).connect(audioCtx.destination); o.start(t0 + d); o.stop(t0 + d + 0.5);
+      });
+      if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+    } catch (e) {}
+  }
+  // Voz para el trabajador; campanita para el dueño
+  function avisarGuardado(frase) { if (esDueno()) campanita(); else hablar(frase); }
+
   // ---------- Formulario ----------
   function renderForm() {
     document.querySelectorAll(".vehbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.veh === S.veh)));
@@ -398,7 +437,7 @@
     try {
       await rpc("agregar", { p_pin: S.pin, p });
       toast(abono ? `Abono de ${money(valor)} registrado` : `Préstamo de ${money(valor)} registrado`);
-      hablar(abono ? `Registraste un abono de ${valorHablado(valor)}.` : `Registraste un préstamo de ${valorHablado(valor)}.`);
+      avisarGuardado(abono ? `Registraste un abono de ${valorHablado(valor)}.` : `Registraste un préstamo de ${valorHablado(valor)}.`);
       $("prestValor").value = ""; $("prestNota").value = "";
       $("prestHint").textContent = "Es una cuenta aparte: no se mezcla con la caja ni con el reparto del día.";
       prestTipo = "prestamo"; drawPrestTipo(); cerrarPrest();
@@ -421,7 +460,7 @@
     try {
       await rpc("agregar", { p_pin: S.pin, p });
       toast(`${S.veh} ${money(valor)} guardado`);
-      hablar(`Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
+      avisarGuardado(`Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
       setValor(0); S.pago = "Efectivo"; renderForm();
       await cargarDia(true);
     } catch (e) {
