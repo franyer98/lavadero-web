@@ -241,3 +241,4 @@ td.neg{color:var(--bad)}
 .cierre .falta{margin:0;color:var(--bad);font-weight:700}
 .cierre .hint{margin:0}
 .cierre .linkbtn{justify-self:start;color:var(--ink-2)}
+.miles-prev{display:block;margin-top:4px;font-weight:700;color:var(--petrol);font-size:15px}.money::placeholder{font-size:16px;font-family:var(--body);font-weight:500}

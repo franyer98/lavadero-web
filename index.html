@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Caja del Lavadero</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="app.css?v=2026-09-27_23:01">
+<link rel="stylesheet" href="app.css?v=2026-09-28_07:33">
 </head>
 <body>
 
@@ -71,8 +71,6 @@
       <p class="hint" id="rNota"></p>
     </div>
 
-    <div class="cierre num" id="cierreBox" hidden></div>
-
     <form class="panel" id="form" autocomplete="off">
       <div class="veh" role="group" aria-label="Vehículo">
         <button type="button" class="vehbtn" data-veh="Carro" aria-pressed="true">
@@ -92,8 +90,8 @@
           Motocarguero</button>
       </div>
 
-      <label class="field"><span>Valor</span>
-        <input id="valor" class="money num" inputmode="numeric" placeholder="$ 0">
+      <label class="field"><span>Valor (en miles)</span>
+        <input id="valor" class="money num" inputmode="decimal" placeholder="En miles: 12 = $12.000">
       </label>
 
       <button type="button" class="transf" id="transf" aria-pressed="false">
@@ -115,7 +113,7 @@
           <button type="button" class="opt solo-dueno" data-pt="abono" aria-pressed="false">Abono (pagó)</button>
         </div>
         <label class="field"><span id="prestValorLbl">Valor que se llevó</span>
-          <input id="prestValor" class="money num" inputmode="numeric" placeholder="$ 0">
+          <input id="prestValor" class="money num" inputmode="decimal" placeholder="En miles: 50 = $50.000">
         </label>
         <label class="field"><span>Nota (opcional)</span>
           <input id="prestNota" maxlength="80" placeholder="Ej. adelanto, almuerzo, pasaje">
@@ -124,6 +122,8 @@
         <div class="hint" id="prestHint">Es una cuenta aparte: no se mezcla con la caja ni con el reparto del día.</div>
       </form>
     </div>
+
+    <div class="cierre num" id="cierreBox" hidden></div>
 
     <div class="list">
       <h2>Registros <small id="listSub"></small></h2>
@@ -195,7 +195,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-09-27_23:01"></script>
-<script src="app.js?v=2026-09-27_23:01"></script>
+<script src="config.js?v=2026-09-28_07:33"></script>
+<script src="app.js?v=2026-09-28_07:33"></script>
 </body>
 </html>

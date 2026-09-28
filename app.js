@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 23:01";
+  const APP_VERSION = "2026-09-28 07:33";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -23,6 +23,30 @@
 
   const fmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
   const money = n => fmt.format(Math.round(n || 0)).replace(/ /g, " ");
+  // Valores en miles: "12" = $12.000, "12,5" = $12.500. Si escriben 1000 o más, se toma como pesos completos.
+  function milesAPesos(txt) {
+    txt = String(txt || "").trim().replace(/\s|\$/g, "");
+    if (!txt) return 0;
+    if (/^\d{1,3}(\.\d{3})+$/.test(txt)) return Number(txt.replace(/\./g, ""));   // "12.000" escrito completo
+    const n = Number(txt.replace(",", "."));
+    if (!isFinite(n) || n <= 0) return 0;
+    return n >= 1000 ? Math.round(n) : Math.round(n * 1000);
+  }
+  function pesosAMiles(n) {
+    n = Math.round(n || 0);
+    if (!n) return "";
+    return n % 1000 === 0 ? String(n / 1000) : String(n / 1000).replace(".", ",");
+  }
+  // Muestra debajo de cada campo de valor cuánto queda en pesos
+  document.addEventListener("input", ev => {
+    const el = ev.target;
+    if (!el.classList || !el.classList.contains("money")) return;
+    el.value = el.value.replace(/[^\d.,]/g, "");
+    let prev = el.parentNode.querySelector(".miles-prev");
+    if (!prev) { prev = document.createElement("small"); prev.className = "miles-prev"; el.after(prev); }
+    const v = milesAPesos(el.value);
+    prev.textContent = v ? "= " + money(v) : "";
+  });
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const todayStr = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ });
@@ -280,7 +304,7 @@
     let cuerpo = "";
     if (!cierre || cierreEditando) {
       cuerpo = `<label class="field"><span>${esDueno() ? "Valor que recibiste" : "Valor que entregas"}</span>
-          <input id="cierreValor" class="money num" inputmode="numeric" value="${total > 0 ? money(total) : ""}" placeholder="$ 0"></label>
+          <input id="cierreValor" class="money num" inputmode="decimal" value="${total > 0 ? pesosAMiles(total) : ""}" placeholder="En miles: 12 = $12.000"><small class="miles-prev">${total > 0 ? "= " + money(total) : ""}</small></label>
         <label class="field"><span>Nota (opcional)</span><input id="cierreNota" maxlength="120" placeholder="Ej. faltaron 5 mil, los traigo mañana"></label>
         <button type="button" class="primary" id="cierreBtn">${esDueno() ? "Cerrar caja (recibido)" : "Cerrar caja: entregué este valor"}</button>
         ${cierreEditando ? '<button type="button" class="linkbtn" id="cierreCancelar">Cancelar</button>' : ""}
@@ -294,15 +318,13 @@
         </div>
         ${falta > 0 ? `<p class="falta">Faltan ${money(falta)}: quedan pendientes para mañana.</p>` : falta < 0 ? `<p class="hint">Entregó ${money(-falta)} de más: queda a su favor.</p>` : ""}
         ${cierre.nota ? `<p class="hint">Nota: ${esc(cierre.nota)}</p>` : ""}
-        ${!recibido && esDueno() ? `<label class="field"><span>Valor que recibiste</span><input id="recibidoValor" class="money num" inputmode="numeric" value="${money(cierre.entregado)}"></label>
+        ${!recibido && esDueno() ? `<label class="field"><span>Valor que recibiste</span><input id="recibidoValor" class="money num" inputmode="decimal" value="${pesosAMiles(cierre.entregado)}"><small class="miles-prev">= ${money(cierre.entregado)}</small></label>
             <button type="button" class="primary" id="confirmarBtn">Confirmar recibido</button>` : ""}
         ${!recibido && !esDueno() ? `<p class="hint">Esperando que el dueño confirme.</p><button type="button" class="linkbtn" id="cierreCorregir">Corregir valor</button>` : ""}
         ${recibido && esDueno() ? `<button type="button" class="linkbtn" id="cierreCorregir">Cambiar</button>` : ""}`;
     }
     box.innerHTML = `<h2>Cierre de caja</h2>${tabla}${cuerpo}`;
-    const fmtIn = el => el && el.addEventListener("input", () => { const n = Number(el.value.replace(/[^\d]/g, "")) || 0; el.value = n ? money(n) : ""; });
-    fmtIn($("cierreValor")); fmtIn($("recibidoValor"));
-    const val = id => Number(($(id).value || "").replace(/[^\d]/g, "")) || 0;
+    const val = id => milesAPesos($(id).value);
     if ($("cierreBtn")) $("cierreBtn").onclick = async () => {
       const v = val("cierreValor");
       $("cierreBtn").disabled = true;
@@ -378,7 +400,7 @@
     const btn = (attr, val, cur, label) => `<button type="button" class="opt" data-${attr}="${val}" aria-pressed="${val === cur}">${label}</button>`;
     return `<div class="editor">
       ${g ? "" : `<div class="opts">${VEHICULOS.map(v => btn("ev", v, e.vehiculo, v)).join("")}</div>`}
-      <label class="field"><span>Valor</span><input id="edValor" class="money num" inputmode="numeric" value="${money(e.valor)}"></label>
+      <label class="field"><span>Valor (en miles)</span><input id="edValor" class="money num" inputmode="decimal" value="${pesosAMiles(e.valor)}"><small class="miles-prev">${e.valor ? "= " + money(e.valor) : ""}</small></label>
       ${g ? `<label class="field"><span>Motivo</span><input id="edNota" maxlength="80" value="${esc(e.nota || "")}"></label>`
           : `<div class="opts">${btn("ep", "Efectivo", e.pago, "Efectivo")}${btn("ep", "Transferencia", e.pago, "Transferencia")}</div>`}
       <div class="edit-actions">
@@ -421,12 +443,12 @@
     }
   });
   $("items").addEventListener("input", ev => {
-    if (ev.target.id === "edValor") { const n = Number(ev.target.value.replace(/[^\d]/g, "")) || 0; ev.target.value = n ? money(n) : ""; }
+
     leerEditor();
   });
   function leerEditor() {
     if (!S.edit) return;
-    const v = $("edValor"); if (v) S.edit.valor = Number(v.value.replace(/[^\d]/g, "")) || 0;
+    const v = $("edValor"); if (v) S.edit.valor = milesAPesos(v.value);
     const n = $("edNota"); if (n) S.edit.nota = n.value.trim();
   }
 
@@ -497,9 +519,8 @@
   }
   document.querySelectorAll(".vehbtn").forEach(b => b.addEventListener("click", () => { S.veh = b.dataset.veh; renderForm(); }));
   $("transf").addEventListener("click", () => { S.pago = S.pago === "Transferencia" ? "Efectivo" : "Transferencia"; renderForm(); });
-  const parseValor = () => Number(($("valor").value || "").replace(/[^\d]/g, "")) || 0;
-  const setValor = n => { $("valor").value = n ? money(n) : ""; };
-  $("valor").addEventListener("input", () => setValor(parseValor()));
+  const parseValor = () => milesAPesos($("valor").value);
+  const setValor = n => { $("valor").value = pesosAMiles(n); const pv = $("valor").parentNode.querySelector(".miles-prev"); if (pv) pv.textContent = n ? "= " + money(n) : ""; };
 
   // Préstamos al trabajador
   $("abrirPrest").addEventListener("click", () => {
@@ -508,7 +529,7 @@
     $("abrirPrest").querySelector(".chev").textContent = open ? "−" : "+";
     if (open) $("prestValor").focus();
   });
-  $("prestValor").addEventListener("input", e => { const n = Number(e.target.value.replace(/[^\d]/g, "")) || 0; e.target.value = n ? money(n) : ""; });
+
   function cerrarPrest() { $("prestForm").hidden = true; $("abrirPrest").setAttribute("aria-expanded", "false"); $("abrirPrest").querySelector(".chev").textContent = "+"; }
   let prestTipo = "prestamo";
   function drawPrestTipo() {
@@ -520,7 +541,7 @@
   document.querySelectorAll("#prestTipo .opt").forEach(b => b.addEventListener("click", () => { prestTipo = b.dataset.pt; drawPrestTipo(); }));
   $("prestForm").addEventListener("submit", async ev => {
     ev.preventDefault();
-    const valor = Number(($("prestValor").value || "").replace(/[^\d]/g, "")) || 0;
+    const valor = milesAPesos($("prestValor").value);
     if (!valor) { $("prestHint").textContent = "Escribe el valor."; $("prestValor").focus(); return; }
     const nota = $("prestNota").value.trim();
     const abono = prestTipo === "abono" && esDueno();
