@@ -225,3 +225,19 @@ td.neg{color:var(--bad)}
 .saldo-mini{font-weight:600;color:var(--bad);font-size:14px}
 .item.abono .what b,.item.abono .val{color:var(--good)}
 .saldo-mini{display:block;white-space:nowrap}
+
+/* Cierre de caja */
+.cierre{margin-top:14px;background:var(--surface);border:2px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:grid;gap:10px}
+.cierre.alerta{border-color:var(--wax);box-shadow:0 0 0 3px rgba(242,183,5,.25)}
+.cierre h2{margin:0;font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cierre dl{margin:0;display:grid;gap:6px}
+.cierre dl>div{display:flex;justify-content:space-between;gap:12px;font-size:15px}
+.cierre dt{color:var(--ink-2)} .cierre dd{margin:0;font-weight:700;white-space:nowrap}
+.cierre dl>div.fuerte dt,.cierre dl>div.fuerte dd{color:var(--ink);font-weight:800}
+.cierre .estado{padding:12px 14px;border-radius:10px;font-weight:800;font-size:18px;font-family:var(--display);letter-spacing:.02em}
+.cierre .estado small{font:500 13px var(--body);opacity:.8;margin-left:6px}
+.cierre .estado.ok{background:var(--good);color:#fff}
+.cierre .estado.espera{background:var(--wax);color:var(--wax-ink)}
+.cierre .falta{margin:0;color:var(--bad);font-weight:700}
+.cierre .hint{margin:0}
+.cierre .linkbtn{justify-self:start;color:var(--ink-2)}
