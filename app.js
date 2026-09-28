@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-28 08:26";
+  const APP_VERSION = "2026-09-28 08:39";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -688,6 +688,33 @@
       $("pinNuevo").value = "";
       toast(rol === "dueno" ? "Tu PIN cambió" : "PIN del trabajador cambiado. Dáselo en persona.");
     } catch (e) { toast(e.message); }
+  });
+
+  // ---------- Compartir la app ----------
+  const URL_APK = "https://franyer98.github.io/lavadero-web/CajaLavadero.apk";
+  const URL_WEB = "https://franyer98.github.io/lavadero-web/";
+  $("compartirApp").addEventListener("click", async () => {
+    const nombre = nombreTrab() || "";
+    const negocio = S.cfg.nombre || "el lavadero";
+    const texto = `Hola${nombre ? " " + nombre : ""}, esta es la app de la caja de ${negocio}.\n\n` +
+      `1. Descárgala aquí: ${URL_APK}\n` +
+      `2. Ábrela e instálala (si el celular pregunta, permite instalar apps de este origen).\n` +
+      `3. Entra con el PIN que te doy en persona.\n\n` +
+      `Si no la puedes instalar, también funciona desde el navegador: ${URL_WEB}`;
+    const C = window.Capacitor, P = C && C.Plugins;
+    try {
+      if (P && P.Share && C.isNativePlatform && C.isNativePlatform()) {
+        await P.Share.share({ title: "App de la caja", text: texto, dialogTitle: "Compartir la app" });
+      } else if (navigator.share) {
+        await navigator.share({ title: "App de la caja", text: texto });
+      } else {
+        await navigator.clipboard.writeText(texto);
+        $("compartirHint").textContent = "Mensaje copiado. Pégalo en WhatsApp para enviárselo.";
+      }
+    } catch (e) {
+      try { await navigator.clipboard.writeText(texto); $("compartirHint").textContent = "Mensaje copiado. Pégalo en WhatsApp para enviárselo."; }
+      catch (_) { $("compartirHint").textContent = "Envíale este enlace: " + URL_APK; }
+    }
   });
 
   // ---------- Exportar CSV ----------

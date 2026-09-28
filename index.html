@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Caja del Lavadero</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="app.css?v=2026-09-28_08:26">
+<link rel="stylesheet" href="app.css?v=2026-09-28_08:39">
 </head>
 <body>
 
@@ -164,6 +164,12 @@
       <input id="cfgNombre" placeholder="Ej. Lavadero El Brillante">
     </div>
     <div class="panel">
+      <h2>Compartir la app con el trabajador</h2>
+      <div class="hint">Le llega un mensaje con el enlace para descargar e instalar la app. El PIN no va en el mensaje: dáselo tú en persona.</div>
+      <button type="button" class="primary" id="compartirApp">Compartir por WhatsApp u otra app</button>
+      <div class="hint" id="compartirHint"></div>
+    </div>
+    <div class="panel">
       <h2>Nombre del trabajador</h2>
       <input id="cfgTrab" maxlength="30" placeholder="Ej. Mauricio">
       <div class="hint">La voz lo dice al inicio: "Mauricio, agregaste una moto por valor de 12 mil pesos".</div>
@@ -212,7 +218,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-09-28_08:26"></script>
-<script src="app.js?v=2026-09-28_08:26"></script>
+<script src="config.js?v=2026-09-28_08:39"></script>
+<script src="app.js?v=2026-09-28_08:39"></script>
 </body>
 </html>
