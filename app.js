@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-28 08:16";
+  const APP_VERSION = "2026-09-28 08:26";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -439,6 +439,49 @@
   }
   // Voz para el trabajador; campanita para el dueño
   const nombreTrab = () => (ajustes().trabajador || "Mauricio").trim();
+
+  // Voz natural de mujer (frases grabadas con Piper, en voz/). Si no hay grabación, usa la voz del celular.
+  const vozCache = {};
+  function clipVoz(url) {
+    if (!vozCache[url]) {
+      vozCache[url] = fetch(url).then(r => { if (!r.ok) throw new Error("sin audio"); return r.arrayBuffer(); })
+        .then(b => new Promise((res, rej) => audioCtx.decodeAudioData(b, res, rej)))
+        .catch(e => { delete vozCache[url]; throw e; });
+    }
+    return vozCache[url];
+  }
+  function archivoMonto(valor) {
+    const k = valor / 1000;
+    if (Number.isInteger(k) && k >= 1 && k <= 300) return `voz/m${k}.mp3`;
+    if (valor % 1000 === 500 && Math.floor(valor / 1000) <= 100) return `voz/m${Math.floor(valor / 1000)}_5.mp3`;
+    return null;
+  }
+  async function vozNatural(veh, valor, transf) {
+    if (nombreTrab().toLowerCase() !== "mauricio") return false;   // las grabaciones dicen "Mauricio"
+    prepararAudio(); if (!audioCtx) return false;
+    const monto = archivoMonto(valor); if (!monto) return false;
+    const urls = [`voz/intro_${String(veh).toLowerCase()}.mp3`, monto].concat(transf ? ["voz/transferencia.mp3"] : []);
+    try {
+      const bufs = await Promise.all(urls.map(clipVoz));
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+      let t = audioCtx.currentTime + 0.05;
+      bufs.forEach((b, i) => {
+        const src = audioCtx.createBufferSource(); src.buffer = b; src.connect(audioCtx.destination);
+        src.start(t); t += b.duration + (i === 0 ? 0.06 : 0.1);
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function precargarVoz() {
+    if (esDueno() || !audioCtx) return;
+    VEHICULOS.forEach(v => clipVoz(`voz/intro_${v.toLowerCase()}.mp3`).catch(() => {}));
+  }
+  document.addEventListener("pointerdown", () => { if (S.rol && !esDueno()) precargarVoz(); }, { once: true, passive: true });
+  async function avisarVenta(veh, valor, transf, frase) {
+    if (esDueno()) { campanita(); return; }
+    if (await vozNatural(veh, valor, transf)) return;
+    avisarGuardado(frase);
+  }
   function avisarGuardado(frase) {
     if (esDueno()) { campanita(); return; }
     const n = nombreTrab();
@@ -569,7 +612,7 @@
     try {
       await rpc("agregar", { p_pin: S.pin, p });
       toast(`${S.veh} ${money(valor)} guardado`);
-      avisarGuardado(`Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
+      avisarVenta(S.veh, valor, S.pago === "Transferencia", `Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
       setValor(0); S.pago = "Efectivo"; renderForm();
       await cargarDia(true);
     } catch (e) {
