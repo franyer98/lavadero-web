@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-28 08:03";
+  const APP_VERSION = "2026-09-28 08:05";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -160,6 +160,7 @@
   function mostrarApp() {
     $("login").hidden = true; $("app").hidden = false;
     document.querySelectorAll(".solo-dueno").forEach(el => (el.hidden = !esDueno()));
+    document.querySelectorAll(".solo-trab").forEach(el => (el.hidden = esDueno()));
     $("tabs").hidden = !esDueno();
     $("whoRol").textContent = esDueno() ? "Dueño" : "Trabajador";
     $("fecha").value = S.fecha;
@@ -282,6 +283,7 @@
 
   function puedeBorrar(r) {
     if (esDueno()) return true;
+    if (r.tipo === "gasto") return false;   // préstamos y abonos: solo el dueño
     return r.rol === "trabajador" && (Date.now() - new Date(r.creado).getTime()) < 15 * 60 * 1000;
   }
 
@@ -518,6 +520,7 @@
   document.querySelectorAll("#prestTipo .opt").forEach(b => b.addEventListener("click", () => { prestTipo = b.dataset.pt; drawPrestTipo(); }));
   $("prestForm").addEventListener("submit", async ev => {
     ev.preventDefault();
+    if (!esDueno()) return;
     let valor = milesAPesos($("prestValor").value);
     let nota = $("prestNota").value.trim();
     let abono = prestTipo === "abono" && esDueno();

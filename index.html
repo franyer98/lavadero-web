@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Caja del Lavadero</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="app.css?v=2026-09-28_08:03">
+<link rel="stylesheet" href="app.css?v=2026-09-28_08:05">
 </head>
 <body>
 
@@ -108,10 +108,12 @@
       </button>
       <form id="prestForm" class="stack" autocomplete="off" hidden>
         <div class="saldo-box num"><span>Saldo que debe</span><b id="saldoPrest">—</b></div>
+        <p class="hint solo-trab" id="prestSoloDueno">El saldo de préstamos solo lo puede cambiar el dueño.</p>
+        <div class="stack solo-dueno" id="prestCtrls">
         <div class="opts" id="prestTipo">
           <button type="button" class="opt" data-pt="prestamo" aria-pressed="true">Préstamo</button>
-          <button type="button" class="opt solo-dueno" data-pt="abono" aria-pressed="false">Abono (pagó)</button>
-          <button type="button" class="opt solo-dueno" data-pt="ajuste" aria-pressed="false">Ajustar saldo</button>
+          <button type="button" class="opt" data-pt="abono" aria-pressed="false">Abono (pagó)</button>
+          <button type="button" class="opt" data-pt="ajuste" aria-pressed="false">Ajustar saldo</button>
         </div>
         <label class="field"><span id="prestValorLbl">Valor que se llevó</span>
           <input id="prestValor" class="money num" inputmode="decimal" placeholder="En miles: 50 = $50.000">
@@ -121,6 +123,7 @@
         </label>
         <button class="danger" id="guardarPrest" type="submit">Registrar préstamo</button>
         <div class="hint" id="prestHint">Es una cuenta aparte: no se mezcla con la caja ni con el reparto del día.</div>
+        </div>
         <div class="movs solo-dueno" id="movs"></div>
       </form>
     </div>
@@ -195,7 +198,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-09-28_08:03"></script>
-<script src="app.js?v=2026-09-28_08:03"></script>
+<script src="config.js?v=2026-09-28_08:05"></script>
+<script src="app.js?v=2026-09-28_08:05"></script>
 </body>
 </html>
