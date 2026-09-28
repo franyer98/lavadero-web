@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-27 22:57";
+  const APP_VERSION = "2026-09-27 23:01";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -108,7 +108,23 @@
     pinBuf = ""; drawDots(); drawPad();
     $("loginName").textContent = lsGet("lav_nombre") || "Caja del Lavadero";
   }
+  // Avisos en segundo plano (solo en la app instalada, solo para el dueño)
+  function pluginAvisos() {
+    const C = window.Capacitor;
+    return C && C.Plugins && C.Plugins.Avisos && C.isNativePlatform && C.isNativePlatform() ? C.Plugins.Avisos : null;
+  }
+  function activarAvisos() {
+    const A = pluginAvisos(); if (!A) return;
+    if (esDueno()) {
+      A.configurar({ url: CFG.SUPABASE_URL, key: CFG.SUPABASE_KEY, pin: S.pin })
+        .then(() => { if (!lsGet("lav_avisos_ok")) { lsSet("lav_avisos_ok", "1"); A.probar().catch(() => {}); } })
+        .catch(() => {});
+    } else {
+      A.desactivar().catch(() => {});
+    }
+  }
   function salir(silencioso) {
+    const A = pluginAvisos(); if (A) A.desactivar().catch(() => {});
     S.pin = null; S.rol = null; lsSet("lav_pin", null);
     clearInterval(timer);
     mostrarLogin();
@@ -125,7 +141,7 @@
     $("whoRol").textContent = esDueno() ? "Dueño" : "Trabajador";
     $("fecha").value = S.fecha;
     setTab(esDueno() ? (lsGet("lav_tab") || "dia") : "dia");
-    renderBrand(); renderForm(); renderDia(); cerrarPrest();
+    renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos();
     cargarDia();
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refrescar(); }, REFRESCO_MS);
@@ -610,7 +626,7 @@
     const rol = $("pinRol").value, nuevo = $("pinNuevo").value;
     try {
       await rpc("cambiar_pin", { p_pin: S.pin, p_rol: rol, p_nuevo: nuevo });
-      if (rol === "dueno") { S.pin = nuevo; lsSet("lav_pin", nuevo); }
+      if (rol === "dueno") { S.pin = nuevo; lsSet("lav_pin", nuevo); activarAvisos(); }
       $("pinNuevo").value = "";
       toast(rol === "dueno" ? "Tu PIN cambió" : "PIN del trabajador cambiado. Dáselo en persona.");
     } catch (e) { toast(e.message); }
