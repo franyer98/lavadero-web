@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-28 08:13";
+  const APP_VERSION = "2026-09-28 08:16";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -438,7 +438,12 @@
     } catch (e) {}
   }
   // Voz para el trabajador; campanita para el dueño
-  function avisarGuardado(frase) { if (esDueno()) campanita(); else hablar(frase); }
+  const nombreTrab = () => (ajustes().trabajador || "Mauricio").trim();
+  function avisarGuardado(frase) {
+    if (esDueno()) { campanita(); return; }
+    const n = nombreTrab();
+    hablar(n ? `${n}, ${frase.charAt(0).toLowerCase()}${frase.slice(1)}` : frase);
+  }
 
   // ---------- Formulario ----------
   function renderForm() {
@@ -616,6 +621,7 @@
   let tdDraft = "dueno";
   function renderCfgEditor() {
     $("cfgNombre").value = S.cfg.nombre;
+    $("cfgTrab").value = nombreTrab();
     tdDraft = transfDestino(); drawTd();
     if (!$("expDesde").value) { $("expDesde").value = S.hoy.slice(0, 8) + "01"; $("expHasta").value = S.hoy; }
   }
@@ -624,7 +630,7 @@
   $("saveCfg").addEventListener("click", async () => {
     const nombre = $("cfgNombre").value.trim();
     try {
-      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([{ tipo: "ajuste", transf: tdDraft }]);
+      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([{ tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio" }]);
       await rpc("guardar_config", { p_pin: S.pin, p_nombre: nombre, p_servicios: servicios });
       S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); toast("Guardado");
     } catch (e) { toast(e.message); }
