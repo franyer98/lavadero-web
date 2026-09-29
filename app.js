@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-29 08:20";
+  const APP_VERSION = "2026-09-29 08:27";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -117,13 +117,19 @@
       const r = await rpc("entrar", { p_pin: pin });
       S.pin = pin; S.rol = r.rol; S.hoy = r.hoy; S.fecha = r.hoy;
       S.cfg = normCfg(r.config);
-      lsSet("lav_pin", pin);
+      lsSet("lav_pin", pin); lsSet("lav_rol", r.rol); lsSet("lav_cfg", JSON.stringify(S.cfg));
       mostrarApp();
     } catch (e) {
       pinBuf = ""; drawDots();
       if (e.code === "x_pin") { S.pin = null; lsSet("lav_pin", null); }
       $("loginErr").textContent = e.message;
-      if (e.code === "RED" && S.pin && S.rol) mostrarApp();
+      if (e.code === "RED" && S.pin && pin === lsGet("lav_pin") && lsGet("lav_rol")) {
+        // Sin señal: entra con lo guardado en el celular
+        S.rol = lsGet("lav_rol"); S.hoy = todayStr(); S.fecha = S.hoy;
+        try { S.cfg = normCfg(JSON.parse(lsGet("lav_cfg") || "{}")); } catch (_) {}
+        const c = leerCacheDia(); if (c && c.fecha === S.hoy) S.registrosServidor = c.registros;
+        mostrarApp();
+      }
     }
   }
   function mostrarLogin() {
@@ -165,13 +171,13 @@
     $("whoRol").textContent = esDueno() ? "Dueño" : "Trabajador";
     $("fecha").value = S.fecha;
     setTab(esDueno() ? (lsGet("lav_tab") || "dia") : "dia");
-    renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos();
+    renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos(); renderCola(); subirCola();
     cargarDia();
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refrescar(); }, REFRESCO_MS);
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden && S.rol) refrescar(); });
-  function refrescar() { cargarDia(true); if (S.tab === "hist") cargarHist(); }
+  function refrescar() { subirCola(); cargarDia(true); if (S.tab === "hist") cargarHist(); }
 
   function setTab(t) {
     S.tab = t;
@@ -187,6 +193,56 @@
   function renderBrand() {
     $("brandName").textContent = S.cfg.nombre || "Lavadero";
     if (S.cfg.nombre) lsSet("lav_nombre", S.cfg.nombre);
+  }
+
+  // ---------- Sin señal: fila de espera ----------
+  const nuevoId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); });
+  const horaAhora = () => new Date().toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+  function leerCola() { try { return JSON.parse(lsGet("lav_cola") || "[]"); } catch (e) { return []; } }
+  function guardarCola(c) { lsSet("lav_cola", c.length ? JSON.stringify(c) : null); }
+  function leerCacheDia() { try { return JSON.parse(lsGet("lav_dia") || "null"); } catch (e) { return null; } }
+  // Guarda un registro: primero en el celular, luego intenta subirlo. Devuelve true si ya quedó en el servidor.
+  async function guardarRegistro(p) {
+    p = Object.assign({ id: nuevoId(), fecha: S.fecha || todayStr(), hora: horaAhora(), offline: true }, p);
+    const cola = leerCola(); cola.push({ pin: S.pin, rol: S.rol, p }); guardarCola(cola);
+    try {
+      await rpc("agregar", { p_pin: S.pin, p });
+      guardarCola(leerCola().filter(x => x.p.id !== p.id));
+      return true;
+    } catch (e) {
+      if (e.code !== "RED") { guardarCola(leerCola().filter(x => x.p.id !== p.id)); throw e; }
+      return false;
+    } finally { renderCola(); }
+  }
+  let subiendo = false;
+  async function subirCola() {
+    if (subiendo) return;
+    const cola = leerCola(); if (!cola.length) { renderCola(); return; }
+    subiendo = true;
+    try {
+      for (const it of cola) {
+        try {
+          await rpc("agregar", { p_pin: it.pin || S.pin, p: it.p });
+          guardarCola(leerCola().filter(x => x.p.id !== it.p.id));
+        } catch (e) {
+          if (e.code === "RED") break;                                   // sigue sin señal
+          guardarCola(leerCola().filter(x => x.p.id !== it.p.id));       // rechazado por el servidor: se descarta
+        }
+      }
+    } finally { subiendo = false; renderCola(); }
+    if (!leerCola().length && S.rol) cargarDia(true);
+  }
+  function renderCola() {
+    const n = leerCola().length;
+    const el = $("colaAviso"); if (!el) return;
+    el.hidden = !n;
+    el.textContent = n ? `Sin señal · ${n} ${n === 1 ? "registro esperando" : "registros esperando"} conexión. Se suben solos.` : "";
+  }
+  window.addEventListener("online", () => subirCola());
+  // Registros propios que aún no llegan al servidor (para mostrarlos y sumarlos ya)
+  function pendientesDe(fecha) {
+    return leerCola().filter(x => x.p.fecha === fecha).map(x => Object.assign({ creado: new Date().toISOString(), rol: x.rol, pendiente: true }, x.p));
   }
 
   // ---------- Día ----------
@@ -214,7 +270,9 @@
         }
       }
       S.vistos = new Set(nuevos.map(x => x.id)); S.vistosFecha = f;
-      S.registros = nuevos; S.hoy = r.hoy;
+      S.registrosServidor = nuevos; S.hoy = r.hoy;
+      if (f === r.hoy) lsSet("lav_dia", JSON.stringify({ fecha: f, registros: nuevos }));
+      subirCola();
       if (!esDueno()) S.fecha = r.fecha;
       const nuevoCfg = normCfg(r.config);
       if (JSON.stringify(nuevoCfg) !== JSON.stringify(S.cfg)) { S.cfg = nuevoCfg; renderBrand(); renderForm(); }
@@ -227,7 +285,11 @@
     } catch (e) {
       if (my !== cargando) return;
       $("syncState").textContent = "Sin conexión";
-      if (!silencioso) banner(e.message);
+      if (e.code === "RED") {
+        const c = leerCacheDia();
+        if (!S.registrosServidor && c && c.fecha === f) S.registrosServidor = c.registros;
+        renderDia();
+      } else if (!silencioso) banner(e.message);
     }
   }
 
@@ -337,12 +399,16 @@
   }
 
   function puedeBorrar(r) {
+    if (r.pendiente) return false;   // aún no llega al servidor
     if (esDueno()) return true;
     if (r.tipo === "gasto") return false;   // préstamos y abonos: solo el dueño
     return r.rol === "trabajador" && (Date.now() - new Date(r.creado).getTime()) < 15 * 60 * 1000;
   }
 
   function renderDia() {
+    const serv = S.registrosServidor || [];
+    const ids = new Set(serv.map(x => x.id));
+    S.registros = pendientesDe(S.fecha).filter(x => !ids.has(x.id)).concat(serv);
     const regs = S.registros;
     const t = totals(regs);
     const esHoy = S.fecha === S.hoy;
@@ -367,7 +433,7 @@
       const tr = r.pago === "Transferencia";
       const what = g
         ? `<b>${esAbono(r) ? "Abono a préstamo" : "Préstamo al trabajador"}</b><span>${esc(r.nota || "")}</span>`
-        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}</span>`;
+        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>`;
       const editando = S.edit && S.edit.id === r.id;
       return `<div class="item ${g ? (esAbono(r) ? "abono" : "gasto") : ""} ${editando ? "editing" : ""}">
         <div class="hora num">${esc(r.hora || "")}</div>
@@ -437,7 +503,7 @@
 
   function setFecha(f) {
     if (!f || !esDueno()) return;
-    S.fecha = f; $("fecha").value = f; S.edit = null; S.registros = [];
+    S.fecha = f; $("fecha").value = f; S.edit = null; S.registros = []; S.registrosServidor = null;
     renderDia(); cargarDia();
   }
   $("fecha").addEventListener("change", () => setFecha($("fecha").value));
@@ -642,7 +708,7 @@
     if (esDueno() && S.fecha !== S.hoy && prestTipo !== "ajuste") p.fecha = S.fecha;
     $("guardarPrest").disabled = true;
     try {
-      await rpc("agregar", { p_pin: S.pin, p });
+      await guardarRegistro(p);
       toast(prestTipo === "ajuste" ? "Saldo ajustado" : abono ? `Abono de ${money(valor)} registrado` : `Préstamo de ${money(valor)} registrado`);
       avisarGuardado(abono ? `Registraste un abono de ${valorHablado(valor)}.` : `Registraste un préstamo de ${valorHablado(valor)}.`);
       $("prestValor").value = ""; $("prestNota").value = "";
@@ -665,11 +731,12 @@
     hint.textContent = "";
     guardando = true; $("guardar").disabled = true;
     try {
-      await rpc("agregar", { p_pin: S.pin, p });
-      toast(`${S.veh} ${money(valor)} guardado`);
+      const subido = await guardarRegistro(p);
+      toast(subido ? `${S.veh} ${money(valor)} guardado` : `Sin señal: ${S.veh} ${money(valor)} guardado en el celular, se sube solo`);
       avisarVenta(S.veh, valor, S.pago === "Transferencia", `Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
       setValor(0); S.pago = "Efectivo"; renderForm();
-      await cargarDia(true);
+      renderDia();
+      if (subido) await cargarDia(true);
     } catch (e) {
       hint.textContent = "No se guardó. " + e.message;
     } finally { guardando = false; $("guardar").disabled = false; }
@@ -808,6 +875,9 @@
   }
 
   // ---------- Arranque ----------
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
   $("appVer").textContent = "Versión " + APP_VERSION;
   $("appVer2").textContent = "Versión " + APP_VERSION;
   if (!CFG.SUPABASE_URL || !CFG.SUPABASE_KEY || CFG.SUPABASE_KEY.startsWith("PEGAR")) {

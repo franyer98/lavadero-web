@@ -294,3 +294,5 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .hdia-total{font-family:var(--display);font-size:20px!important}
 .hdia-sub{font-size:13px;color:var(--ink-2);min-width:0}
 .hdia-est{font-size:13px;font-weight:700;align-self:end;white-space:nowrap}
+.cola-aviso{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--wax);color:var(--wax-ink);font-weight:700;font-size:14px}
+.item .what .tag.espera{background:var(--wax);color:var(--wax-ink)}
