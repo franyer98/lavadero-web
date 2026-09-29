@@ -269,3 +269,18 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .who{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;white-space:nowrap}
 .ver-top{margin-top:2px}
 .who-row{white-space:nowrap}
+
+/* Cuentas al día */
+.cuentas{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:grid;gap:10px}
+.cuentas h2{margin:0;font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cuentas dl{margin:0;display:grid;gap:4px;max-height:220px;overflow:auto}
+.cuentas dl>div{display:flex;justify-content:space-between;font-size:15px}
+.cuentas dt{color:var(--ink-2)} .cuentas dd{margin:0;font-weight:700}
+.cuentas .debe{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 14px;border-radius:10px;background:var(--wax);color:var(--wax-ink);font-weight:700}
+.cuentas .debe b{font-family:var(--display);font-size:26px;white-space:nowrap}
+.cta-linea{font-size:15px}
+.cta-acciones{display:grid;gap:10px}
+.cta-fecha{display:grid;grid-template-columns:1fr auto;gap:8px}
+.cta-fecha .ghost{padding:0 16px}
+.primary.armado{background:var(--bad);color:#fff}
+.hint.neg,.neg{color:var(--bad)} .pos{color:var(--good)}
