@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-29 08:16";
+  const APP_VERSION = "2026-09-29 08:20";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -710,9 +710,15 @@
     $("bars").innerHTML = days.map(f => `<div class="b ${f === hoy ? "hoy" : ""}" title="${esc(prettyDate(f))}: ${money(v(f))}"><i style="height:${(v(f) / max * 100).toFixed(1)}%"></i></div>`).join("");
     $("axis").innerHTML = days.map(f => `<span>${Number(f.slice(8))}</span>`).join("");
     $("histBody").innerHTML = S.dias.length ? S.dias.map(d => {
-      return `<tr class="click" data-f="${d.fecha}"><td>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}</td><td>${d.carros}</td><td><b>${money(Number(d.ventas))}</b></td><td>${d.prest || d.abonos ? [d.prest ? "−" + money(d.prest) : "", d.abonos ? "+" + money(d.abonos) : ""].filter(Boolean).join(" ") : "—"}</td><td class="${d.entregar < 0 ? "neg" : ""}"><b>${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}</b></td><td>${alDia() && d.fecha <= alDia() ? '<span class="pos">✓ Al día</span>' : '<span class="neg">Pendiente</span>'}</td></tr>`;
-    }).join("") : `<tr><td colspan="6" style="text-align:left;color:var(--ink-2)">Aún no hay días registrados.</td></tr>`;
-    $("histBody").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => { setTab("dia"); setFecha(tr.dataset.f); window.scrollTo(0, 0); }));
+      const ok = alDia() && d.fecha <= alDia();
+      const prest = d.prest || d.abonos ? [d.prest ? "préstamo " + money(d.prest) : "", d.abonos ? "abono " + money(d.abonos) : ""].filter(Boolean).join(" · ") : "";
+      return `<button type="button" class="hdia" data-f="${d.fecha}">
+        <span class="hdia-top"><b>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short" }))}</b><b class="hdia-total">${money(Number(d.ventas))}</b></span>
+        <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · te debe ${d.entregar < 0 ? "−" : ""}${money(Math.abs(d.entregar))}${prest ? " · " + prest : ""}</span>
+        <span class="hdia-est ${ok ? "pos" : "neg"}">${ok ? "✓ Al día" : "Pendiente"}</span>
+      </button>`;
+    }).join("") : `<p class="hint" style="padding:0 16px">Aún no hay días registrados.</p>`;
+    $("histBody").querySelectorAll(".hdia").forEach(b => b.addEventListener("click", () => { setTab("dia"); setFecha(b.dataset.f); window.scrollTo(0, 0); }));
   }
 
   // ---------- Ajustes ----------
