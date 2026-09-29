@@ -259,3 +259,13 @@ td.neg{color:var(--bad)}
 .veh .vehbtn{padding:6px 6px 10px;gap:6px}
 .vehbtn[aria-pressed="true"] img{outline:3px solid var(--wax);outline-offset:-3px}
 .creditos .hint{line-height:1.5}
+
+/* Encabezado: pegado arriba sin hueco, y "Dueño · Salir" siempre a la derecha */
+html{padding-top:0}
+header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.login{padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.brand{align-items:center}
+.brand h1{flex:1 1 auto;min-width:0}
+.who{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;white-space:nowrap}
+.ver-top{margin-top:2px}
+.who-row{white-space:nowrap}
