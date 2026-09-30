@@ -6,13 +6,13 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-29 08:27";
+  const APP_VERSION = "2026-09-30 11:31";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
     x_bloqueado: "Demasiados intentos. Espera 10 minutos.",
     SOLO_DUENO: "Solo el dueño puede hacer eso.",
-    NO_PERMITIDO: "Solo puedes cambiar o borrar tus registros de los últimos 15 minutos. Pídeselo al dueño.",
+    NO_PERMITIDO: "Solo puedes corregir tus lavados de hoy. Para otros días, pídeselo al dueño.",
     NO_EXISTE: "Ese registro ya no existe.",
     VALOR_INVALIDO: "Escribe un valor mayor a cero.",
     PIN_4_A_6_DIGITOS: "El PIN debe tener entre 4 y 6 dígitos.",
@@ -401,9 +401,10 @@
   function puedeBorrar(r) {
     if (r.pendiente) return false;   // aún no llega al servidor
     if (esDueno()) return true;
-    if (r.tipo === "gasto") return false;   // préstamos y abonos: solo el dueño
-    return r.rol === "trabajador" && (Date.now() - new Date(r.creado).getTime()) < 15 * 60 * 1000;
+    // Mauricio: sus lavados de hoy, mientras el día no esté marcado como al día
+    return r.rol === "trabajador" && r.tipo === "venta" && r.fecha === S.hoy && !(alDia() && r.fecha <= alDia());
   }
+
 
   function renderDia() {
     const serv = S.registrosServidor || [];
