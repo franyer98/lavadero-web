@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-09-30 11:31";
+  const APP_VERSION = "2026-10-01 18:03";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -330,8 +330,21 @@
     const box = $("cuentasBox");
     const desdeFijo = alDia();
     if (!esDueno()) {
-      box.hidden = !desdeFijo;
-      if (desdeFijo) box.innerHTML = `<div class="cta-linea">Cuentas al día hasta <b>${esc(prettyDate(desdeFijo, { weekday: "short", day: "numeric", month: "short" }))}</b></div>`;
+      // Mauricio: solo lectura, con los totales que entrega el servidor
+      try {
+        const r = await rpc("cuentas_pendientes", { p_pin: S.pin });
+        const dias = (r.dias || []).map(d => {
+          const t = { total: Number(d.total) || 0, transf: Number(d.transf) || 0, prest: 0, vehiculos: Number(d.vehiculos) || 0 };
+          return { f: d.fecha, t };
+        });
+        S.cuentas = { desde: r.al_dia || null, dias, debe: dias.reduce((a, d) => a + calcReparto(d.t).entregar, 0), soloVer: true };
+      } catch (e) {
+        // Si aún no está el código en Supabase, muestra solo la fecha
+        box.hidden = !desdeFijo;
+        if (desdeFijo) box.innerHTML = `<div class="cta-linea">Cuentas al día hasta <b>${esc(prettyDate(desdeFijo, { weekday: "short", day: "numeric", month: "short" }))}</b></div>`;
+        return;
+      }
+      renderCuentas();
       return;
     }
     const desde = desdeFijo ? shiftDate(desdeFijo, 1) : shiftDate(S.hoy, -30);
@@ -346,21 +359,23 @@
   }
   function renderCuentas() {
     const box = $("cuentasBox"), c = S.cuentas;
-    if (!esDueno() || !c) return;
+    if (!c) return;
+    const soloVer = !esDueno();
     box.hidden = false;
     const corto = f => prettyDate(f, { weekday: "short", day: "numeric", month: "short" });
     const lista = c.dias.map(d => `<div><dt>${esc(corto(d.f))}</dt><dd>${money(calcReparto(d.t).entregar)}</dd></div>`).join("");
     box.innerHTML = `<h2>Cuentas pendientes</h2>
-      <div class="cta-linea">${c.desde ? `Al día hasta <b>${esc(prettyDate(c.desde, { weekday: "long", day: "numeric", month: "long" }))}</b>` : "Aún no has marcado hasta qué día están al día."}</div>
+      <div class="cta-linea">${c.desde ? `Al día hasta <b>${esc(prettyDate(c.desde, { weekday: "long", day: "numeric", month: "long" }))}</b>` : (soloVer ? "El dueño aún no ha marcado hasta qué día están al día." : "Aún no has marcado hasta qué día están al día.")}</div>
       ${c.dias.length ? `<dl>${lista}</dl>
-        <div class="debe"><span>${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · te debe entregar</span><b>${money(Math.round(c.debe))}</b></div>`
+        <div class="debe"><span>${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · ${soloVer ? "le debes entregar al dueño" : "te debe entregar"}</span><b>${money(Math.round(c.debe))}</b></div>`
         : `<p class="hint">${c.desde ? "No hay días pendientes: están al día." : "No hay lavados en los últimos 30 días."}</p>`}
-      <div class="cta-acciones">
+      ${soloVer ? '<p class="hint">Solo el dueño puede marcar las cuentas al día.</p>' : `<div class="cta-acciones">
         <button type="button" class="primary ${cuentasArmado ? "armado" : ""}" id="alDiaHoy">${cuentasArmado ? "¿Seguro? Toca otra vez" : "Marcar al día hasta hoy"}</button>
         <label class="field"><span>O hasta otra fecha</span>
           <div class="cta-fecha"><input type="date" id="alDiaFecha" max="${S.hoy}" value="${c.desde || ""}"><button type="button" class="ghost" id="alDiaOtra">Marcar</button></div>
         </label>
-      </div>`;
+      </div>`}`;
+    if (soloVer) return;
     $("alDiaHoy").onclick = async () => {
       if (!cuentasArmado) { cuentasArmado = true; renderCuentas(); setTimeout(() => { cuentasArmado = false; renderCuentas(); }, 4000); return; }
       cuentasArmado = false; await marcarAlDia(S.hoy);
