@@ -410,3 +410,5 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .gdd b{color:var(--good);white-space:nowrap}
 .gdd.hoy .gdd-b i{background:#1E7A4F}
 @media (prefers-color-scheme:dark){.gdd b{color:#5FD39A}.gdd.hoy .gdd-b i{background:#5FD39A}}
+.gan-graf .ghoy{font-weight:800;fill:#1E7A4F}
+@media (prefers-color-scheme:dark){.gan-graf .ghoy{fill:#5FD39A}}

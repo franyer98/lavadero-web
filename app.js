@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 13:32";
+  const APP_VERSION = "2026-10-02 13:33";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -435,8 +435,8 @@
       ${barras}
       ${area ? `<path d="${area}" fill="url(#gGrad)"/><path class="gl" d="${linea(cur)}"/>` : ""}
       <circle class="gp" cx="${ux}" cy="${uy}" r="5"/>
-      <text class="gx" x="${X(1)}" y="${H - 6}">día 1</text>
-      ${diaHoy > 2 ? `<text class="gx" x="${ux}" y="${H - 6}" text-anchor="middle">hoy</text>` : ""}
+      ${Array.from({ length: diaHoy }, (_, i) => i + 1).filter(d => d === diaHoy || diaHoy <= 12 || d === 1 || d % 5 === 0 && diaHoy - d > 2).map(d =>
+        `<text class="gx ${d === diaHoy ? "ghoy" : ""}" x="${X(d)}" y="${H - 6}" text-anchor="${d === 1 && d !== diaHoy ? "start" : (d === diaHoy && X(d) > W * 0.85 ? "end" : "middle")}">${d === diaHoy ? "hoy " + d : d}</text>`).join("")}
       <text class="gv" x="${Math.min(ux + 9, W - pr)}" y="${Math.max(12, uy - 8)}" text-anchor="${ux > W * 0.6 ? "end" : "start"}">${esc(money(cur[cur.length - 1] || 0))}</text>
     </svg>
     <div class="gan-ley"><span class="lc"></span> ${esc(nomMes(mes))} &nbsp; ${ant.some(v => v) ? `<span class="la"></span> ${esc(nomMes(mesAnt))}` : ""} &nbsp; <span class="lb"></span> lo de cada día</div>`;
