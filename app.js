@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 11:25";
+  const APP_VERSION = "2026-10-02 11:26";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -1011,6 +1011,24 @@
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
+  // Actualización automática: si hay versión nueva publicada, recarga sola
+  // (al volver a la app y cada 5 minutos), sin interrumpir si están escribiendo un valor.
+  async function revisarVersion() {
+    try {
+      if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(APP_VERSION)) return;   // en pruebas no aplica
+      const r = await fetch("version.txt?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) return;
+      const v = (await r.text()).trim();
+      const ocupado = $("valor") && $("valor").value.trim() !== "" || document.getElementById("fiesta");
+      if (v && v !== APP_VERSION && !ocupado && lsGet("lav_recarga") !== v) {
+        lsSet("lav_recarga", v);   // evita recargar en bucle si algo falla
+        location.reload();
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) revisarVersion(); });
+  setInterval(revisarVersion, 5 * 60 * 1000);
+  setTimeout(revisarVersion, 3000);
   $("appVer").textContent = "Versión " + APP_VERSION;
   $("appVer2").textContent = "Versión " + APP_VERSION;
   if (!CFG.SUPABASE_URL || !CFG.SUPABASE_KEY || CFG.SUPABASE_KEY.startsWith("PEGAR")) {

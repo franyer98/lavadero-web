@@ -339,3 +339,9 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .chip-mini{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;color:#fff!important;font-weight:800;font-size:13px}
 .chip-mini.favor{background:#1E7A4F}
 .chip-mini.contra{background:#B8322A}
+.cuentas dl>div.fila{gap:10px}
+.cuentas dl>div.fila dd{flex-shrink:0}
+@media (prefers-color-scheme:dark){
+  .fila-favor,.hdia-favor{background:rgba(46,170,110,.22)}
+  .fila-contra,.hdia-contra{background:rgba(220,70,60,.22)}
+}
