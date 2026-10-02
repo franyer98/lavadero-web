@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 12:28";
+  const APP_VERSION = "2026-10-02 12:29";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -367,7 +367,7 @@
   // ---------- Mis ganancias (solo el trabajador, solo vista) ----------
   async function cargarGanancias() {
     try {
-      const r = await rpc("mis_ganancias", { p_pin: S.pin, p_desde: shiftDate(S.hoy, -70), p_hasta: S.hoy });
+      const r = await rpc("mis_ganancias", { p_pin: S.pin, p_desde: shiftDate(S.hoy, -370), p_hasta: S.hoy });
       S.ganDias = r.dias || [];
     } catch (e) { if (!S.ganDias) S.ganDias = null; }   // si aún no se activó en Supabase, no se muestra
     renderGanancias();
@@ -393,24 +393,19 @@
       if (f.startsWith(mes)) mesT += g;
       if (f.startsWith(mesAnt)) { antT += g; if (Number(f.slice(8)) <= diaHoy) antHastaHoy += g; }
     });
-    $("gHoy").textContent = money(mitad(hoy));
-    $("gSem").textContent = money(sem);
+    const nomMes = k => { const [a, b] = k.split("-").map(Number); const n = new Date(Date.UTC(a, b - 1, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" }); return n.charAt(0).toUpperCase() + n.slice(1) + (a !== y ? " " + a : ""); };
+    $("gMesL").textContent = "Ganancia de " + nomMes(mes).toLowerCase();
     $("gMes").textContent = money(mesT);
-    const nombreMes = new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" });
-    const diasSem = (dow + 6) % 7 + 1;
-    $("gSemL").textContent = "Esta semana";
-    $("gSemS").textContent = diasSem === 1 ? "solo hoy (lunes)" : `desde el lunes ${Number(lunes.slice(8))}`;
-    $("gMesL").textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-    $("gMesS").textContent = diaHoy === 1 ? "solo hoy" : `del 1 al ${diaHoy}`;
-    $("gHoyS").textContent = "la mitad del día";
-    const nombreMesAnt = new Date(Date.UTC(m === 1 ? y - 1 : y, (m + 10) % 12, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" });
+    $("gMesS").textContent = diaHoy === 1 ? "solo hoy, 1 de " + nomMes(mes).toLowerCase() : `del 1 al ${diaHoy} de ${nomMes(mes).toLowerCase()}`;
     if (antT > 0) {
       const dif = mesT - antHastaHoy;
-      $("gComp").textContent = `En ${nombreMesAnt} ganaste ${money(antT)} en total. ` +
-        (dif === 0 ? `Vas igual que a esta altura de ${nombreMesAnt}.` : `Vas ${money(Math.abs(dif)).replace(" ", "\u00a0")} ${dif > 0 ? "arriba" : "abajo"} comparado con esta misma fecha de ${nombreMesAnt}.`);
+      $("gComp").textContent = dif === 0 ? `Vas igual que a esta misma fecha de ${nomMes(mesAnt).toLowerCase()}.`
+        : `Vas ${money(Math.abs(dif)).replace(" ", "\u00a0")} ${dif > 0 ? "arriba" : "abajo"} comparado con esta misma fecha de ${nomMes(mesAnt).toLowerCase()}.`;
     } else $("gComp").textContent = "Tu ganancia es la mitad de lo que se lava cada día.";
-    const dias = Object.keys(ventas).filter(f => ventas[f].v > 0).sort().reverse().slice(0, 21);
-    $("gDias").innerHTML = dias.map(f => `<div><dt>${esc(prettyDate(f, { weekday: "short", day: "numeric", month: "short" }).replace(/\s*(de\s*)?\d{4}$/, ""))}${ventas[f].n ? ` · ${ventas[f].n} ${ventas[f].n === 1 ? "lavado" : "lavados"}` : ""}</dt><dd>${money(mitad(f))}</dd></div>`).join("") || `<p class="hint">Aún no hay días con lavados.</p>`;
+    const porMes = {};
+    Object.keys(ventas).forEach(f => { const k = f.slice(0, 7); if (k !== mes) porMes[k] = (porMes[k] || 0) + mitad(f); });
+    const meses = Object.keys(porMes).filter(k => porMes[k] > 0).sort().reverse();
+    $("gDias").innerHTML = meses.map(k => `<div><dt>${esc(nomMes(k))}</dt><dd>${money(porMes[k])}</dd></div>`).join("") || `<p class="hint">Aún no hay meses anteriores.</p>`;
   }
 
   // ---------- Cuentas al día ----------

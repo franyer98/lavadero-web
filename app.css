@@ -378,3 +378,8 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 
 .ganancias{min-width:0}.gan-dias dt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gan-dias dd{flex-shrink:0}
 .gan-stats small{font-size:11px;color:var(--ink-2);line-height:1.2}
+.gan-mes{display:grid;gap:2px;text-align:center;padding:14px 10px;border-radius:12px;background:rgba(30,122,79,.12);border:1px solid rgba(30,122,79,.35)}
+.gan-mes span{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2)}
+.gan-mes b{font-family:var(--display);font-size:40px;line-height:1.05;color:var(--good)}
+.gan-mes small{font-size:13px;color:var(--ink-2)}
+@media (prefers-color-scheme:dark){.gan-mes{background:rgba(46,170,110,.18)}.gan-mes b{color:#5FD39A}}

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-02_12:28">
+<link rel="stylesheet" href="app.css?v=2026-10-02_12:29">
 </head>
 <body>
 
@@ -84,13 +84,13 @@
     <!-- Solo el trabajador: sus ganancias (solo vista) -->
     <div class="cuentas ganancias num" id="ganBox" hidden>
       <h2>Mis ganancias</h2>
-      <div class="gan-stats">
-        <div><span>Hoy</span><b id="gHoy">$ 0</b><small id="gHoyS"></small></div>
-        <div><span id="gSemL">Esta semana</span><b id="gSem">$ 0</b><small id="gSemS"></small></div>
-        <div><span id="gMesL">Este mes</span><b id="gMes">$ 0</b><small id="gMesS"></small></div>
+      <div class="gan-mes">
+        <span id="gMesL">Este mes</span>
+        <b id="gMes">$ 0</b>
+        <small id="gMesS"></small>
       </div>
       <p class="hint" id="gComp"></p>
-      <details class="gan-dias"><summary>Ver por día</summary><dl id="gDias"></dl></details>
+      <details class="gan-dias"><summary>Meses anteriores</summary><dl id="gDias"></dl></details>
     </div>
 
     <form class="panel solo-trab" id="form" autocomplete="off">
@@ -246,7 +246,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-02_12:28"></script>
-<script src="app.js?v=2026-10-02_12:28"></script>
+<script src="config.js?v=2026-10-02_12:29"></script>
+<script src="app.js?v=2026-10-02_12:29"></script>
 </body>
 </html>
