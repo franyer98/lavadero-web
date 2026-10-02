@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 12:18";
+  const APP_VERSION = "2026-10-02 12:28";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -396,6 +396,13 @@
     $("gHoy").textContent = money(mitad(hoy));
     $("gSem").textContent = money(sem);
     $("gMes").textContent = money(mesT);
+    const nombreMes = new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" });
+    const diasSem = (dow + 6) % 7 + 1;
+    $("gSemL").textContent = "Esta semana";
+    $("gSemS").textContent = diasSem === 1 ? "solo hoy (lunes)" : `desde el lunes ${Number(lunes.slice(8))}`;
+    $("gMesL").textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+    $("gMesS").textContent = diaHoy === 1 ? "solo hoy" : `del 1 al ${diaHoy}`;
+    $("gHoyS").textContent = "la mitad del día";
     const nombreMesAnt = new Date(Date.UTC(m === 1 ? y - 1 : y, (m + 10) % 12, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" });
     if (antT > 0) {
       const dif = mesT - antHastaHoy;

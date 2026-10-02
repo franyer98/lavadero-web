@@ -377,3 +377,4 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 @media (prefers-color-scheme:dark){.gan-stats>div{background:rgba(46,170,110,.18)}.gan-stats b{color:#5FD39A}}
 
 .ganancias{min-width:0}.gan-dias dt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gan-dias dd{flex-shrink:0}
+.gan-stats small{font-size:11px;color:var(--ink-2);line-height:1.2}
