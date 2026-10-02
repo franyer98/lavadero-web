@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 12:29";
+  const APP_VERSION = "2026-10-02 13:17";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -372,6 +372,15 @@
     } catch (e) { if (!S.ganDias) S.ganDias = null; }   // si aún no se activó en Supabase, no se muestra
     renderGanancias();
   }
+  // Número que sube contando, para que se sienta el aumento
+  function contarHasta(el, valor) {
+    const desde = Number(el.dataset.v || 0);
+    el.dataset.v = String(valor);
+    if (!desde || desde === valor || matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = money(valor); return; }
+    const t0 = performance.now(), dur = 1200;
+    const paso = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = money(Math.round(desde + (valor - desde) * e)); if (k < 1) requestAnimationFrame(paso); };
+    requestAnimationFrame(paso);
+  }
   function renderGanancias() {
     const box = $("ganBox");
     if (esDueno() || !S.ganDias) { box.hidden = true; return; }
@@ -394,14 +403,48 @@
       if (f.startsWith(mesAnt)) { antT += g; if (Number(f.slice(8)) <= diaHoy) antHastaHoy += g; }
     });
     const nomMes = k => { const [a, b] = k.split("-").map(Number); const n = new Date(Date.UTC(a, b - 1, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" }); return n.charAt(0).toUpperCase() + n.slice(1) + (a !== y ? " " + a : ""); };
-    $("gMesL").textContent = "Ganancia de " + nomMes(mes).toLowerCase();
-    $("gMes").textContent = money(mesT);
-    $("gMesS").textContent = diaHoy === 1 ? "solo hoy, 1 de " + nomMes(mes).toLowerCase() : `del 1 al ${diaHoy} de ${nomMes(mes).toLowerCase()}`;
+    $("gMesL").textContent = "Tu ganancia de " + nomMes(mes).toLowerCase();
+    contarHasta($("gMes"), mesT);
+    const gHoy = mitad(hoy);
+    $("gHoyChip").hidden = !gHoy;
+    $("gHoyChip").textContent = `▲ +${money(gHoy)} hoy`;
+    if (S.ganUltHoy != null && gHoy > S.ganUltHoy) {   // acaba de sumar: que se note
+      const chip = $("gHoyChip"); chip.classList.remove("salta"); void chip.offsetWidth; chip.classList.add("salta");
+    }
+    S.ganUltHoy = gHoy;
+    // Curva acumulada del mes (y la del mes pasado, punteada, para comparar)
+    const diasMes = (a, b) => new Date(Date.UTC(a, b, 0)).getUTCDate();
+    const [ya, ma] = mesAnt.split("-").map(Number);
+    const nAct = diasMes(y, m), nAnt = diasMes(ya, ma);
+    const acum = (k, n, hasta) => { const out = []; let t = 0; for (let d = 1; d <= hasta; d++) { t += mitad(`${k}-${String(d).padStart(2, "0")}`); out.push(t); } return out; };
+    // El gráfico muestra solo lo que va del mes (se llena a medida que avanza)
+    const n = Math.max(diaHoy, 7);
+    const cur = acum(mes, nAct, diaHoy), ant = acum(mesAnt, nAnt, Math.min(diaHoy, nAnt));
+    const W = 320, H = 150, pl = 8, pr = 8, pt = 16, pb = 22;
+    const max = Math.max(1, ...cur, ...ant.slice(0, diaHoy)) * 1.12;
+    const X = d => pl + (d - 1) / (n - 1) * (W - pl - pr), Y = v => pt + (1 - v / max) * (H - pt - pb);
+    const linea = arr => arr.map((v, i) => `${i ? "L" : "M"}${X(i + 1).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+    const area = cur.length ? `${linea(cur)}L${X(cur.length).toFixed(1)},${Y(0)}L${X(1).toFixed(1)},${Y(0)}Z` : "";
+    const barras = cur.map((v, i) => { const g = v - (i ? cur[i - 1] : 0); if (!g) return ""; const hgt = Math.max(2, g / max * (H - pt - pb)); return `<rect class="gb" x="${(X(i + 1) - 2.5).toFixed(1)}" y="${(Y(0) - hgt).toFixed(1)}" width="5" height="${hgt.toFixed(1)}" rx="1.5"/>`; }).join("");
+    const ux = X(cur.length || 1), uy = Y(cur[cur.length - 1] || 0);
+    $("gGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ganancia acumulada de ${esc(nomMes(mes))}">
+      <defs><linearGradient id="gGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2EAA6E" stop-opacity=".45"/><stop offset="1" stop-color="#2EAA6E" stop-opacity=".05"/></linearGradient></defs>
+      <line class="ge" x1="${pl}" x2="${W - pr}" y1="${Y(0)}" y2="${Y(0)}"/>
+      ${ant.some(v => v) ? `<path class="ga" d="${linea(ant)}"/>` : ""}
+      ${barras}
+      ${area ? `<path d="${area}" fill="url(#gGrad)"/><path class="gl" d="${linea(cur)}"/>` : ""}
+      <circle class="gp" cx="${ux}" cy="${uy}" r="5"/>
+      <text class="gx" x="${X(1)}" y="${H - 6}">día 1</text>
+      ${diaHoy > 2 ? `<text class="gx" x="${ux}" y="${H - 6}" text-anchor="middle">hoy</text>` : ""}
+      <text class="gv" x="${Math.min(ux + 9, W - pr)}" y="${Math.max(12, uy - 8)}" text-anchor="${ux > W * 0.6 ? "end" : "start"}">${esc(money(cur[cur.length - 1] || 0))}</text>
+    </svg>
+    <div class="gan-ley"><span class="lc"></span> ${esc(nomMes(mes))} &nbsp; ${ant.some(v => v) ? `<span class="la"></span> ${esc(nomMes(mesAnt))}` : ""} &nbsp; <span class="lb"></span> lo de cada día</div>`;
     if (antT > 0) {
       const dif = mesT - antHastaHoy;
-      $("gComp").textContent = dif === 0 ? `Vas igual que a esta misma fecha de ${nomMes(mesAnt).toLowerCase()}.`
-        : `Vas ${money(Math.abs(dif)).replace(" ", "\u00a0")} ${dif > 0 ? "arriba" : "abajo"} comparado con esta misma fecha de ${nomMes(mesAnt).toLowerCase()}.`;
-    } else $("gComp").textContent = "Tu ganancia es la mitad de lo que se lava cada día.";
+      $("gComp").innerHTML = dif > 0 ? `<b class="gan-up">▲ ${esc(money(dif))}</b> más que a esta misma fecha de ${esc(nomMes(mesAnt).toLowerCase())}. ¡Sigue así!`
+        : dif < 0 ? `Te faltan <b>${esc(money(-dif))}</b> para alcanzar lo que llevabas a esta fecha de ${esc(nomMes(mesAnt).toLowerCase())}. ¡Tú puedes!`
+        : `Vas igual que a esta misma fecha de ${esc(nomMes(mesAnt).toLowerCase())}.`;
+    } else $("gComp").textContent = "Tu ganancia es la mitad de lo que se lava cada día. Cada lavado la hace crecer.";
     const porMes = {};
     Object.keys(ventas).forEach(f => { const k = f.slice(0, 7); if (k !== mes) porMes[k] = (porMes[k] || 0) + mitad(f); });
     const meses = Object.keys(porMes).filter(k => porMes[k] > 0).sort().reverse();
