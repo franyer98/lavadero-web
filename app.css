@@ -412,3 +412,8 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 @media (prefers-color-scheme:dark){.gdd b{color:#5FD39A}.gdd.hoy .gdd-b i{background:#5FD39A}}
 .gan-graf .ghoy{font-weight:800;fill:#1E7A4F}
 @media (prefers-color-scheme:dark){.gan-graf .ghoy{fill:#5FD39A}}
+
+/* Trabajador: Registrar (formulario y sus lavados) / Cuentas (totales, reparto, préstamos) */
+body.trab-reg .b-cta{display:none!important}
+body.trab-cta .b-reg{display:none!important}
+body.trab-reg #form{margin-top:12px}

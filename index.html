@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-02_13:33">
+<link rel="stylesheet" href="app.css?v=2026-10-02_13:35">
 </head>
 <body>
 
@@ -37,7 +37,8 @@
     </div>
     <nav class="tabs" id="tabs" role="tablist">
       <button role="tab" id="tab-dia" data-tab="dia" aria-selected="true">Caja</button>
-      <button role="tab" id="tab-gan" data-tab="gan" aria-selected="false" class="solo-trab">Mis ganancias</button>
+      <button role="tab" id="tab-cta" data-tab="cta" aria-selected="false" class="solo-trab">Cuentas</button>
+      <button role="tab" id="tab-gan" data-tab="gan" aria-selected="false" class="solo-trab">Ganancias</button>
       <button role="tab" id="tab-hist" data-tab="hist" aria-selected="false" class="solo-dueno">Historial</button>
       <button role="tab" id="tab-aj" data-tab="aj" aria-selected="false" class="solo-dueno">Ajustes</button>
     </nav>
@@ -55,7 +56,7 @@
       <button class="softbtn" id="goToday">Hoy</button>
     </div>
 
-    <div class="ticket" aria-live="polite">
+    <div class="ticket b-cta" aria-live="polite">
       <div class="head"><span id="ticketFecha">—</span><span id="syncState" class="sync">Cargando…</span></div>
       <div class="big">
         <div class="label">Total del día</div>
@@ -73,17 +74,17 @@
       </div>
     </div>
 
-    <div class="reparto num" id="reparto">
+    <div class="reparto num b-cta" id="reparto">
       <h2>Reparto del día · mitad y mitad</h2>
       <dl id="rLista"></dl>
       <div class="debe"><span id="rDebeLbl">El trabajador te debe entregar</span><b id="rDebe">$ 0</b></div>
       <p class="hint" id="rNota"></p>
     </div>
 
-    <div class="cuentas num" id="cuentasBox" hidden></div>
+    <div class="cuentas num b-cta" id="cuentasBox" hidden></div>
 
 
-    <form class="panel solo-trab" id="form" autocomplete="off">
+    <form class="panel solo-trab b-reg" id="form" autocomplete="off">
       <div class="veh" role="group" aria-label="Vehículo">
         <button type="button" class="vehbtn" data-veh="Carro" aria-pressed="true">
           <img src="fotos/carro.jpg" alt="" width="360" height="240" loading="eager">
@@ -114,7 +115,7 @@
       <div class="hint" id="formHint"></div>
     </form>
 
-    <div class="panel prest">
+    <div class="panel prest b-cta">
       <button type="button" class="prest-toggle" id="abrirPrest" aria-expanded="false">
         <span>Préstamos al trabajador <small class="saldo-mini" id="saldoMini"></small></span><span class="chev" aria-hidden="true">+</span>
       </button>
@@ -140,7 +141,7 @@
       </form>
     </div>
 
-    <div class="list">
+    <div class="list b-reg">
       <h2>Registros <small id="listSub"></small></h2>
       <div id="items"></div>
     </div>
@@ -252,7 +253,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-02_13:33"></script>
-<script src="app.js?v=2026-10-02_13:33"></script>
+<script src="config.js?v=2026-10-02_13:35"></script>
+<script src="app.js?v=2026-10-02_13:35"></script>
 </body>
 </html>
