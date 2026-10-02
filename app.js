@@ -529,9 +529,9 @@
     $("metaBarra").setAttribute("aria-valuenow", String(pct));
     $("metaBox").classList.toggle("lograda", lograda);
     $("metaTxt").textContent = lograda
-      ? `¡Meta cumplida! ${money(total)} de ${money(meta)}`
+      ? (total > meta ? `¡Meta cumplida! Van ${money(total - meta)} por encima` : "¡Meta cumplida!")
       : `Meta del día: faltan ${money(meta - total)} de ${money(meta)}`;
-    $("metaPct").textContent = (lograda ? Math.round(total / meta * 100) : pct) + "%";
+    $("metaPct").textContent = lograda ? "✓" : pct + "%";
     // Celebrar una sola vez por día cuando se cruza la meta
     const k = "lav_meta_" + S.fecha;
     if (lograda && S.fecha === S.hoy && S.metaPrevia === false && !lsGet(k)) {
