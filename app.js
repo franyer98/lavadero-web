@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 10:59";
+  const APP_VERSION = "2026-10-02 11:01";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -367,7 +367,7 @@
     const quien = v => v >= 0
       ? (soloVer ? "Debes " : "Te debe ") + money(v)
       : (soloVer ? "El dueño te debe " : "Le debes ") + money(-v);
-    const lista = c.dias.map(d => { const v = Math.round(calcReparto(d.t).entregar); return `<div><dt>${esc(corto(d.f))}</dt><dd class="${v < 0 ? "pos" : ""}">${quien(v)}</dd></div>`; }).join("");
+    const lista = c.dias.map(d => { const v = Math.round(calcReparto(d.t).entregar); return `<div><dt>${esc(corto(d.f))}</dt><dd class="txt-${claseFavor(v)}">${quien(v)}</dd></div>`; }).join("");
     const total = Math.round(c.debe);
     const textoTotal = total >= 0
       ? (soloVer ? "le debes entregar al dueño" : "te debe entregar")
@@ -375,7 +375,7 @@
     box.innerHTML = `<h2>Cuentas pendientes</h2>
       <div class="cta-linea">${c.desde ? `Al día hasta <b>${esc(prettyDate(c.desde, { weekday: "long", day: "numeric", month: "long" }))}</b>` : (soloVer ? "El dueño aún no ha marcado hasta qué día están al día." : "Aún no has marcado hasta qué día están al día.")}</div>
       ${c.dias.length ? `<dl>${lista}</dl>
-        <div class="debe"><span>${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · ${textoTotal}</span><b>${money(Math.abs(total))}</b></div>
+        <div class="debe ${claseFavor(total)}"><span>${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · ${textoTotal}</span><b>${money(Math.abs(total))}</b></div>
         ${total < 0 ? `<p class="hint">Es porque las transferencias que llegaron a la cuenta del dueño superan su mitad.</p>` : ""}`
         : `<p class="hint">${c.desde ? "No hay días pendientes: están al día." : "No hay lavados en los últimos 30 días."}</p>`}
       ${soloVer ? '<p class="hint">Solo el dueño puede marcar las cuentas al día.</p>' : `<div class="cta-acciones">
@@ -396,6 +396,13 @@
     catch (e) { toast(e.message); }
   }
 
+  // v = lo que el trabajador le entrega al dueño. Verde si favorece a quien mira, rojo si debe.
+  function claseFavor(v) {
+    v = Math.round(v || 0);
+    if (!v) return "";
+    return (esDueno() ? v > 0 : v < 0) ? "favor" : "contra";
+  }
+
   function renderReparto(t) {
     const r = calcReparto(t);
     const filas = [["Mitad del dueño", money(r.mitad)], ["Mitad del trabajador", money(r.mitad)]];
@@ -403,6 +410,8 @@
       filas.push([esDueno() ? "Transferencias que ya te llegaron" : "Transferencias que ya le llegaron al dueño", "−" + money(t.transf)]);
     $("rLista").innerHTML = filas.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
     const debe = Math.round(r.entregar);
+    const caja = document.querySelector("#reparto .debe");
+    if (caja) { caja.classList.remove("favor", "contra"); const cl = claseFavor(debe); if (cl) caja.classList.add(cl); }
     if (debe >= 0) {
       $("rDebeLbl").textContent = esDueno() ? "El trabajador te debe entregar" : "Le debes entregar al dueño";
       $("rDebe").textContent = money(debe); $("rDebe").className = "";
@@ -806,7 +815,7 @@
       const prest = d.prest || d.abonos ? [d.prest ? "préstamo " + money(d.prest) : "", d.abonos ? "abono " + money(d.abonos) : ""].filter(Boolean).join(" · ") : "";
       return `<button type="button" class="hdia" data-f="${d.fecha}">
         <span class="hdia-top"><b>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short" }))}</b><b class="hdia-total">${money(Number(d.ventas))}</b></span>
-        <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · ${d.entregar < 0 ? "le debes " : "te debe "}${money(Math.abs(d.entregar))}${prest ? " · " + prest : ""}</span>
+        <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · <span class="txt-${claseFavor(d.entregar)}">${d.entregar < 0 ? "le debes " : "te debe "}${money(Math.abs(d.entregar))}</span>${prest ? " · " + prest : ""}</span>
         <span class="hdia-est ${ok ? "pos" : "neg"}">${ok ? "✓ Al día" : "Pendiente"}</span>
       </button>`;
     }).join("") : `<p class="hint" style="padding:0 16px">Aún no hay días registrados.</p>`;

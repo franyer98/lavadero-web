@@ -1,7 +1,7 @@
 // Guarda la app en el celular para que abra sin internet.
 // Pantallas y código: primero internet (para recibir cambios), si no hay, la copia guardada.
 // Fotos y voz: primero la copia guardada (no cambian).
-const VERSION = "2026-10-02 10:59";
+const VERSION = "2026-10-02 11:01";
 const CACHE = "caja-" + VERSION;
 const BASE = new URL("./", self.location).pathname;
 const NUCLEO = ["", "index.html", "app.js", "app.css", "config.js", "logo.png", "icon-192.png",

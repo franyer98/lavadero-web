@@ -296,3 +296,10 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .hdia-est{font-size:13px;font-weight:700;align-self:end;white-space:nowrap}
 .cola-aviso{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--wax);color:var(--wax-ink);font-weight:700;font-size:14px}
 .item .what .tag.espera{background:var(--wax);color:var(--wax-ink)}
+
+/* Colores a favor / en contra */
+.debe.favor{background:#1E7A4F!important;color:#fff!important}
+.debe.contra{background:#B8322A!important;color:#fff!important}
+.debe.favor b,.debe.contra b,.debe.favor span,.debe.contra span{color:#fff!important}
+.txt-favor{color:var(--good)!important;font-weight:700}
+.txt-contra{color:var(--bad)!important;font-weight:700}
