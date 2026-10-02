@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 13:17";
+  const APP_VERSION = "2026-10-02 13:30";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -167,10 +167,10 @@
     $("login").hidden = true; $("app").hidden = false;
     document.querySelectorAll(".solo-dueno").forEach(el => (el.hidden = !esDueno()));
     document.querySelectorAll(".solo-trab").forEach(el => (el.hidden = esDueno()));
-    $("tabs").hidden = !esDueno();
+    $("tabs").hidden = false;
     $("whoRol").textContent = esDueno() ? "Dueño" : "Trabajador";
     $("fecha").value = S.fecha;
-    setTab(esDueno() ? (lsGet("lav_tab") || "dia") : "dia");
+    setTab(esDueno() ? (["dia", "hist", "aj"].includes(lsGet("lav_tab")) ? lsGet("lav_tab") : "dia") : "dia");
     renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos(); renderCola(); subirCola();
     cargarDia();
     clearInterval(timer);
@@ -182,10 +182,11 @@
   function setTab(t) {
     S.tab = t;
     document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
-    $("view-dia").hidden = t !== "dia"; $("view-hist").hidden = t !== "hist"; $("view-aj").hidden = t !== "aj";
+    $("view-dia").hidden = t !== "dia"; $("view-hist").hidden = t !== "hist"; $("view-aj").hidden = t !== "aj"; $("view-gan").hidden = t !== "gan";
     lsSet("lav_tab", t);
     if (t === "hist") cargarHist();
     if (t === "aj") renderCfgEditor();
+    if (t === "gan") { renderGanancias(); cargarGanancias(); }
   }
   document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
 

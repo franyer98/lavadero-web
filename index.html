@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-02_13:17">
+<link rel="stylesheet" href="app.css?v=2026-10-02_13:30">
 </head>
 <body>
 
@@ -37,6 +37,7 @@
     </div>
     <nav class="tabs" id="tabs" role="tablist">
       <button role="tab" id="tab-dia" data-tab="dia" aria-selected="true">Caja</button>
+      <button role="tab" id="tab-gan" data-tab="gan" aria-selected="false" class="solo-trab">Mis ganancias</button>
       <button role="tab" id="tab-hist" data-tab="hist" aria-selected="false" class="solo-dueno">Historial</button>
       <button role="tab" id="tab-aj" data-tab="aj" aria-selected="false" class="solo-dueno">Ajustes</button>
     </nav>
@@ -81,18 +82,6 @@
 
     <div class="cuentas num" id="cuentasBox" hidden></div>
 
-    <!-- Solo el trabajador: sus ganancias (solo vista) -->
-    <div class="cuentas ganancias num" id="ganBox" hidden>
-      <h2>Mis ganancias</h2>
-      <div class="gan-mes">
-        <span id="gMesL">Este mes</span>
-        <b id="gMes">$ 0</b>
-        <span class="gan-hoy" id="gHoyChip" hidden></span>
-      </div>
-      <div class="gan-graf" id="gGraf" aria-label="Cómo sube tu ganancia día a día"></div>
-      <p class="hint" id="gComp"></p>
-      <details class="gan-dias"><summary>Meses anteriores</summary><dl id="gDias"></dl></details>
-    </div>
 
     <form class="panel solo-trab" id="form" autocomplete="off">
       <div class="veh" role="group" aria-label="Vehículo">
@@ -164,6 +153,21 @@
   </section>
 
   <!-- HISTORIAL -->
+  <section id="view-gan" hidden>
+    <!-- Solo el trabajador: sus ganancias (solo vista) -->
+    <div class="cuentas ganancias num" id="ganBox" hidden style="margin-top:16px">
+      <h2>Mis ganancias</h2>
+      <div class="gan-mes">
+        <span id="gMesL">Este mes</span>
+        <b id="gMes">$ 0</b>
+        <span class="gan-hoy" id="gHoyChip" hidden></span>
+      </div>
+      <div class="gan-graf" id="gGraf" aria-label="Cómo sube tu ganancia día a día"></div>
+      <p class="hint" id="gComp"></p>
+      <details class="gan-dias"><summary>Meses anteriores</summary><dl id="gDias"></dl></details>
+    </div>
+  </section>
+
   <section id="view-hist" hidden>
     <div class="stats num">
       <div class="stat"><span class="label">Últimos 7 días</span><b id="s7">$ 0</b><small id="s7c"></small></div>
@@ -247,7 +251,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-02_13:17"></script>
-<script src="app.js?v=2026-10-02_13:17"></script>
+<script src="config.js?v=2026-10-02_13:30"></script>
+<script src="app.js?v=2026-10-02_13:30"></script>
 </body>
 </html>
