@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 11:10";
+  const APP_VERSION = "2026-10-02 11:15";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -403,6 +403,77 @@
     return (esDueno() ? v > 0 : v < 0) ? "favor" : "contra";
   }
 
+  // ---------- Celebración (globos, confeti y fanfarria) ----------
+  function fanfarria() {
+    try {
+      prepararAudio(); if (!audioCtx) return;
+      const t0 = audioCtx.currentTime + 0.05;
+      const nota = (f, t, d, tipo = "triangle", vol = 0.25) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = tipo; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0 + t);
+        g.gain.exponentialRampToValueAtTime(vol, t0 + t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + t + d);
+        o.connect(g).connect(audioCtx.destination); o.start(t0 + t); o.stop(t0 + t + d + 0.05);
+      };
+      // ta-ta-ta-taaa (Do Mi Sol Do') y acorde final
+      [[523, 0, .16], [659, .16, .16], [784, .32, .16], [1047, .48, .5]].forEach(([f, t, d]) => nota(f, t, d, "square", 0.12));
+      [523, 659, 784, 1047].forEach(f => nota(f, 1.0, 1.4, "triangle", 0.14));
+      // chispitas
+      for (let i = 0; i < 8; i++) nota(1500 + Math.random() * 1500, 1.1 + i * 0.12, 0.12, "sine", 0.05);
+      if (navigator.vibrate) navigator.vibrate([120, 80, 120, 80, 300]);
+    } catch (e) {}
+  }
+  function celebrar(titulo, sub) {
+    if (document.getElementById("fiesta")) return;
+    fanfarria();
+    const capa = document.createElement("div");
+    capa.id = "fiesta";
+    capa.innerHTML = `<canvas></canvas><div class="fiesta-msg"><div class="fiesta-t">${esc(titulo)}</div><div class="fiesta-s">${esc(sub)}</div><div class="fiesta-x">Toca para cerrar</div></div>`;
+    document.body.appendChild(capa);
+    const cv = capa.querySelector("canvas"), cx = cv.getContext("2d");
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = () => cv.width / dpr, H = () => cv.height / dpr;
+    const ajustar = () => { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    ajustar(); addEventListener("resize", ajustar);
+    const colores = ["#F2B705", "#E63946", "#2A9D8F", "#3A86FF", "#FF006E", "#8338EC", "#FB5607", "#06D6A0"];
+    const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const globos = Array.from({ length: 14 }, (_, i) => ({
+      x: Math.random() * W(), y: H() + 40 + Math.random() * H() * 0.6, r: 22 + Math.random() * 16,
+      v: 1.2 + Math.random() * 1.6, f: Math.random() * 6.28, c: colores[i % colores.length]
+    }));
+    const confeti = Array.from({ length: 160 }, () => ({
+      x: Math.random() * W(), y: -20 - Math.random() * H(), w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
+      v: 2 + Math.random() * 3, rot: Math.random() * 6.28, vr: (Math.random() - .5) * .3, dx: (Math.random() - .5) * 1.5,
+      c: colores[Math.floor(Math.random() * colores.length)]
+    }));
+    let fin = false, t = 0;
+    const cerrar = () => { if (fin) return; fin = true; capa.classList.add("sale"); removeEventListener("resize", ajustar); setTimeout(() => capa.remove(), 400); };
+    capa.addEventListener("click", cerrar);
+    setTimeout(cerrar, 7000);
+    function globo(g) {
+      const x = g.x + Math.sin(g.f + t / 30) * 12;
+      cx.strokeStyle = "rgba(255,255,255,.7)"; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.moveTo(x, g.y + g.r * 1.2);
+      cx.quadraticCurveTo(x + 8, g.y + g.r * 2, x - 4, g.y + g.r * 3); cx.stroke();
+      cx.fillStyle = g.c; cx.beginPath(); cx.ellipse(x, g.y, g.r * .85, g.r * 1.1, 0, 0, 6.29); cx.fill();
+      cx.beginPath(); cx.moveTo(x - 5, g.y + g.r * 1.1); cx.lineTo(x + 5, g.y + g.r * 1.1); cx.lineTo(x, g.y + g.r * 1.3); cx.fill();
+      cx.fillStyle = "rgba(255,255,255,.45)"; cx.beginPath(); cx.ellipse(x - g.r * .3, g.y - g.r * .4, g.r * .18, g.r * .3, -.4, 0, 6.29); cx.fill();
+    }
+    function cuadro() {
+      if (fin) return;
+      t++;
+      cx.clearRect(0, 0, W(), H());
+      confeti.forEach(p => {
+        if (!quieto) { p.y += p.v; p.x += p.dx + Math.sin((t + p.y) / 40); p.rot += p.vr; if (p.y > H() + 20) { p.y = -20; p.x = Math.random() * W(); } }
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore();
+      });
+      globos.forEach(g => { if (!quieto) { g.y -= g.v; if (g.y < -g.r * 4) { g.y = H() + g.r * 2; g.x = Math.random() * W(); } } globo(g); });
+      requestAnimationFrame(cuadro);
+    }
+    requestAnimationFrame(cuadro);
+  }
+
   // ---------- Meta diaria ----------
   const metaDiaria = () => Number(ajustes().meta) || 100000;
   function renderMeta(total) {
@@ -419,9 +490,11 @@
     const k = "lav_meta_" + S.fecha;
     if (lograda && S.fecha === S.hoy && S.metaPrevia === false && !lsGet(k)) {
       lsSet(k, "1");
-      // espera a que termine la voz del registro para no hablar encima
-      setTimeout(() => { if (!esDueno()) hablar(`${nombreTrab() || ""}, ¡felicitaciones! Llegaron a la meta del día.`); else campanita(); }, 4000);
-      toast("¡Meta del día cumplida!");
+      // espera a que termine la voz del registro, luego fiesta y felicitación
+      setTimeout(() => {
+        celebrar("¡FELICITACIONES!", `Llegaron a la meta del día\n${money(total).replace(/ /g, "\u00a0")} de ${money(meta).replace(/ /g, "\u00a0")}`);
+        if (!esDueno()) setTimeout(() => hablar(`${nombreTrab() || ""}, ¡felicitaciones! Llegaron a la meta del día.`), 2600);
+      }, 3200);
     }
     if (S.fecha === S.hoy) S.metaPrevia = lograda;
   }

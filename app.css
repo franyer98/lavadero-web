@@ -312,3 +312,15 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .meta-txt{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--ink-2)}
 .meta-txt b{color:var(--ink);font-family:var(--display);font-size:18px}
 .meta.lograda .meta-txt span,.meta.lograda .meta-txt b{color:var(--good);font-weight:700}
+
+/* Celebración de meta cumplida */
+#fiesta{position:fixed;inset:0;z-index:100;background:rgba(8,20,26,.55);display:grid;place-items:center;animation:fiestaEntra .3s ease}
+#fiesta.sale{opacity:0;transition:opacity .4s}
+#fiesta canvas{position:absolute;inset:0;width:100%;height:100%}
+.fiesta-msg{position:relative;text-align:center;padding:24px 28px;border-radius:20px;background:var(--wax);color:var(--wax-ink);box-shadow:0 12px 40px rgba(0,0,0,.35);box-sizing:border-box;width:min(360px,calc(100vw - 32px));animation:fiestaSalto .9s cubic-bezier(.2,1.6,.4,1)}
+.fiesta-t{font-family:var(--display);font-weight:800;font-size:clamp(26px,8vw,40px);letter-spacing:.02em;line-height:1}
+.fiesta-s{margin-top:10px;white-space:pre-line;font-weight:700;font-size:16px}
+.fiesta-x{margin-top:14px;font-size:12px;opacity:.7}
+@keyframes fiestaEntra{from{opacity:0}to{opacity:1}}
+@keyframes fiestaSalto{0%{transform:scale(.3) rotate(-8deg);opacity:0}60%{transform:scale(1.08) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.fiesta-msg{animation:none}}
