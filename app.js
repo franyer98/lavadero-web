@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 11:37";
+  const APP_VERSION = "2026-10-02 11:48";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -270,6 +270,7 @@
         }
       }
       S.vistos = new Set(nuevos.map(x => x.id)); S.vistosFecha = f;
+      if (esDueno()) cargarCambios(f, r.hoy);
       S.registrosServidor = nuevos; S.hoy = r.hoy;
       if (f === r.hoy) lsSet("lav_dia", JSON.stringify({ fecha: f, registros: nuevos }));
       subirCola();
@@ -291,6 +292,51 @@
         renderDia();
       } else if (!silencioso) banner(e.message);
     }
+  }
+
+  // ---------- Registro de cambios (solo el dueño) ----------
+  function textoCambio(c) {
+    const a = c.antes || {}, d = c.despues || {};
+    const pago = p => (p || "").toLowerCase();
+    if (c.accion === "borrar") return `Borró ${a.vehiculo || "un lavado"} de ${money(a.valor)} (${pago(a.pago)})`;
+    const partes = [];
+    if (a.vehiculo !== d.vehiculo) partes.push(`${a.vehiculo} → ${d.vehiculo}`);
+    if (a.valor !== d.valor) partes.push(`${money(a.valor)} → ${money(d.valor)}`);
+    if (a.pago !== d.pago) partes.push(`${a.pago} → ${d.pago}`);
+    return `Corrigió ${a.vehiculo || "un lavado"}: ${partes.join(" · ") || "sin cambios"}`;
+  }
+  async function cargarCambios(f, hoy) {
+    try {
+      const r = await rpc("ver_cambios", { p_pin: S.pin, p_fecha: f });
+      if (f !== S.fecha) return;
+      const lista = r.cambios || [];
+      if (f === hoy) {
+        const maxId = lista.reduce((m, c) => Math.max(m, c.id), 0);
+        const visto = Number(lsGet("lav_cambio_visto") || 0);
+        const nuevos = lista.filter(c => c.id > visto);
+        if (lsGet("lav_cambio_visto") != null && nuevos.length) {
+          campanita();
+          toast(`${nombreTrab() || "El trabajador"} ${textoCambio(nuevos[0]).replace(/^./, m => m.toLowerCase())}${nuevos.length > 1 ? ` (+${nuevos.length - 1} más)` : ""}`);
+        }
+        if (maxId > visto || lsGet("lav_cambio_visto") == null) lsSet("lav_cambio_visto", String(Math.max(maxId, visto)));
+      }
+      S.cambios = lista;
+    } catch (e) { S.cambios = []; }   // si aún no se activó en Supabase, no se muestra nada
+    renderCambios();
+  }
+  function renderCambios() {
+    const box = $("cambiosBox"), lista = esDueno() ? (S.cambios || []) : [];
+    box.hidden = !lista.length;
+    if (!lista.length) return;
+    $("cambiosBox").querySelector("h2").firstChild.textContent = `Cambios de ${nombreTrab() || "el trabajador"} `;
+    $("cambiosSub").textContent = `${lista.length} ${lista.length === 1 ? "cambio" : "cambios"} este día`;
+    $("cambiosLista").innerHTML = lista.map(c => {
+      const reg = (c.antes && c.antes.hora) ? ` · lavado de las ${esc(String(c.antes.hora).slice(0, 5))}` : "";
+      return `<div class="cambio cambio-${c.accion === "borrar" ? "borrar" : "editar"}">
+        <span class="cambio-hora">${esc(c.hora)}</span>
+        <span class="cambio-txt"><b>${c.accion === "borrar" ? "Borrado" : "Corrección"}</b>${reg}<br>${esc(textoCambio(c))}</span>
+      </div>`;
+    }).join("");
   }
 
   const esAbono = r => /^abono/i.test(r.concepto || "");
@@ -634,6 +680,7 @@
   }
 
   function setFecha(f) {
+    S.cambios = []; renderCambios();
     if (!f || !esDueno()) return;
     S.fecha = f; $("fecha").value = f; S.edit = null; S.registros = []; S.registrosServidor = null;
     renderDia(); cargarDia();

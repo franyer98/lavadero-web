@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-02_11:37">
+<link rel="stylesheet" href="app.css?v=2026-10-02_11:48">
 </head>
 <body>
 
@@ -142,6 +142,12 @@
       <h2>Registros <small id="listSub"></small></h2>
       <div id="items"></div>
     </div>
+
+    <!-- Solo el dueño: correcciones y borrados que hizo el trabajador -->
+    <div class="list cambios-box" id="cambiosBox" hidden>
+      <h2>Cambios del trabajador <small id="cambiosSub"></small></h2>
+      <div id="cambiosLista"></div>
+    </div>
   </section>
 
   <!-- HISTORIAL -->
@@ -228,7 +234,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-02_11:37"></script>
-<script src="app.js?v=2026-10-02_11:37"></script>
+<script src="config.js?v=2026-10-02_11:48"></script>
+<script src="app.js?v=2026-10-02_11:48"></script>
 </body>
 </html>
