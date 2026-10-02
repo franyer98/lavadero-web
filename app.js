@@ -554,7 +554,7 @@
     renderReparto(t);
     const nLav = t.carros + t.motos;
     $("listSub").textContent = regs.length ? `${nLav} ${nLav === 1 ? "lavado" : "lavados"}${(t.prest || t.abonos) ? " · préstamos" : ""} · más reciente arriba` : "";
-    $("form").hidden = esDueno() && S.fecha > S.hoy;
+    $("form").hidden = esDueno() || S.fecha > S.hoy;   // solo el trabajador registra lavados
     const box = $("items");
     if (!regs.length) {
       box.innerHTML = `<div class="empty">${esHoy ? "Todavía no hay lavados hoy." : "No hay registros este día."}</div>`;
