@@ -417,3 +417,12 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 body.trab-reg .b-cta{display:none!important}
 body.trab-cta .b-reg{display:none!important}
 body.trab-reg #form{margin-top:12px}
+
+/* Nequi */
+.item .what .tag.nq-ok{background:#1E7A4F;color:#fff}
+.item .what .tag.nq-no{background:#B8322A;color:#fff}
+.item .what .tag.nq-esp{background:#F2B705;color:#231A00}
+.nequi-res{display:block;margin-top:2px;font-size:12px;font-weight:700}
+.nequi-res.todo{color:var(--good)} .nequi-res.falta{color:var(--bad)}
+.nequi-estado{font-weight:600}
+.nq-activo{display:inline-block;padding:2px 10px;border-radius:999px;background:#1E7A4F;color:#fff;font-weight:800;margin-right:6px}

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-02_13:35">
+<link rel="stylesheet" href="app.css?v=2026-10-02_13:45">
 </head>
 <body>
 
@@ -70,7 +70,7 @@
         <div><span class="label">Vehículos</span><b id="totCarros">0</b></div>
         <div><span class="label">Detalle</span><span class="desglose" id="totMotos">—</span></div>
         <div><span class="label">Efectivo</span><b id="totEfectivo">$ 0</b></div>
-        <div><span class="label">Transferencia</span><b id="totTransf">$ 0</b></div>
+        <div><span class="label">Transferencia</span><b id="totTransf">$ 0</b><small class="nequi-res" id="nequiRes" hidden></small></div>
       </div>
     </div>
 
@@ -200,6 +200,14 @@
       <div class="hint" id="compartirHint"></div>
     </div>
     <div class="panel">
+      <h2>Confirmar transferencias con Nequi</h2>
+      <div class="hint">La app lee en tu celular las notificaciones de Nequi ("Recibiste $…") y marca como confirmadas las transferencias que registró el trabajador. Si una no llega en hora y media, te avisa.</div>
+      <div class="nequi-estado" id="nequiEstado">Revisando…</div>
+      <button type="button" class="primary" id="nequiBtn" hidden>Dar permiso</button>
+      <button type="button" class="linkbtn" id="nequiOff" hidden>Desactivar</button>
+      <div class="hint" id="nequiAyuda" hidden>Si Android no te deja activarlo ("ajuste restringido"): ve a Ajustes del celular → Aplicaciones → Caja Lavadero → menú ⋮ → "Permitir ajustes restringidos", y vuelve a intentar.</div>
+    </div>
+    <div class="panel">
       <h2>Meta diaria</h2>
       <label class="field"><span>Meta de ventas por día (en miles)</span>
         <input id="cfgMeta" class="money num" inputmode="decimal" placeholder="100"></label>
@@ -253,7 +261,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-02_13:35"></script>
-<script src="app.js?v=2026-10-02_13:35"></script>
+<script src="config.js?v=2026-10-02_13:45"></script>
+<script src="app.js?v=2026-10-02_13:45"></script>
 </body>
 </html>
