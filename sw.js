@@ -1,7 +1,7 @@
 // Guarda la app en el celular para que abra sin internet.
 // Pantallas y código: primero internet (para recibir cambios), si no hay, la copia guardada.
 // Fotos y voz: primero la copia guardada (no cambian).
-const VERSION = "2026-10-02 11:32";
+const VERSION = "2026-10-02 11:37";
 const CACHE = "caja-" + VERSION;
 const BASE = new URL("./", self.location).pathname;
 const NUCLEO = ["", "index.html", "app.js", "app.css", "config.js", "logo.png", "icon-192.png",
@@ -30,8 +30,24 @@ self.addEventListener("fetch", e => {
     })));
     return;
   }
-  e.respondWith(fetch(req, { cache: "no-store" }).then(res => {
+  // Primero internet, pero si la señal está lenta (más de 3 s) abre con la copia guardada
+  // para no dejar la pantalla en negro. La app se actualiza sola cuando mejora la señal.
+  const nav = req.mode === "navigate";
+  const copiaGuardada = () => caches.match(req, { ignoreSearch: true }).then(r => r || (nav ? caches.match(BASE + "index.html") : undefined));
+  const red = fetch(req, { cache: "no-store" }).then(res => {
     if (res.ok) { const copia = res.clone(); caches.open(CACHE).then(c => c.put(url.pathname === BASE ? BASE + "index.html" : req, copia)); }
     return res;
-  }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match(BASE + "index.html"))));
+  });
+  e.respondWith((async () => {
+    try {
+      const r = await Promise.race([red, new Promise(ok => setTimeout(() => ok(null), 3000))]);
+      if (r) return r;
+      const c = await copiaGuardada();
+      return c || await red;
+    } catch (err) {
+      const c = await copiaGuardada();
+      if (c) return c;
+      throw err;
+    }
+  })());
 });
