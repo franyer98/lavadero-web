@@ -303,3 +303,12 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .debe.favor b,.debe.contra b,.debe.favor span,.debe.contra span{color:#fff!important}
 .txt-favor{color:var(--good)!important;font-weight:700}
 .txt-contra{color:var(--bad)!important;font-weight:700}
+
+/* Meta diaria */
+.meta{margin-top:10px;display:grid;gap:6px}
+.meta-barra{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meta-barra i{display:block;height:100%;width:0;background:var(--wax);border-radius:999px;transition:width .6s ease}
+.meta.lograda .meta-barra i{background:#1E7A4F}
+.meta-txt{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--ink-2)}
+.meta-txt b{color:var(--ink);font-family:var(--display);font-size:18px}
+.meta.lograda .meta-txt span,.meta.lograda .meta-txt b{color:var(--good);font-weight:700}

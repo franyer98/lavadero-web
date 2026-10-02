@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 11:01";
+  const APP_VERSION = "2026-10-02 11:10";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -403,6 +403,29 @@
     return (esDueno() ? v > 0 : v < 0) ? "favor" : "contra";
   }
 
+  // ---------- Meta diaria ----------
+  const metaDiaria = () => Number(ajustes().meta) || 100000;
+  function renderMeta(total) {
+    const meta = metaDiaria(), pct = Math.min(100, Math.round(total / meta * 100));
+    const lograda = total >= meta;
+    $("metaRelleno").style.width = pct + "%";
+    $("metaBarra").setAttribute("aria-valuenow", String(pct));
+    $("metaBox").classList.toggle("lograda", lograda);
+    $("metaTxt").textContent = lograda
+      ? `¡Meta cumplida! ${money(total)} de ${money(meta)}`
+      : `Meta del día: faltan ${money(meta - total)} de ${money(meta)}`;
+    $("metaPct").textContent = (lograda ? Math.round(total / meta * 100) : pct) + "%";
+    // Celebrar una sola vez por día cuando se cruza la meta
+    const k = "lav_meta_" + S.fecha;
+    if (lograda && S.fecha === S.hoy && S.metaPrevia === false && !lsGet(k)) {
+      lsSet(k, "1");
+      // espera a que termine la voz del registro para no hablar encima
+      setTimeout(() => { if (!esDueno()) hablar(`${nombreTrab() || ""}, ¡felicitaciones! Llegaron a la meta del día.`); else campanita(); }, 4000);
+      toast("¡Meta del día cumplida!");
+    }
+    if (S.fecha === S.hoy) S.metaPrevia = lograda;
+  }
+
   function renderReparto(t) {
     const r = calcReparto(t);
     const filas = [["Mitad del dueño", money(r.mitad)], ["Mitad del trabajador", money(r.mitad)]];
@@ -448,6 +471,7 @@
     const esHoy = S.fecha === S.hoy;
     $("ticketFecha").textContent = (esHoy ? "Hoy · " : "") + prettyDate(S.fecha);
     $("totVentas").textContent = money(t.total);
+    renderMeta(t.total);
     $("totCarros").textContent = t.vehiculos;
     const orden = VEHICULOS.concat(Object.keys(t.porTipo).filter(k => !VEHICULOS.includes(k)));
     $("totMotos").textContent = orden.filter(k => t.porTipo[k]).map(k => `${t.porTipo[k]} ${t.porTipo[k] === 1 ? k.toLowerCase() : (PLURAL[k] || k.toLowerCase() + "s")}`).join(" · ") || "—";
@@ -827,6 +851,7 @@
   function renderCfgEditor() {
     $("cfgNombre").value = S.cfg.nombre;
     $("cfgTrab").value = nombreTrab();
+    $("cfgMeta").value = pesosAMiles(metaDiaria());
     tdDraft = transfDestino(); drawTd();
     if (!$("expDesde").value) { $("expDesde").value = S.hoy.slice(0, 8) + "01"; $("expHasta").value = S.hoy; }
   }
@@ -835,7 +860,7 @@
   $("saveCfg").addEventListener("click", async () => {
     const nombre = $("cfgNombre").value.trim();
     try {
-      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([Object.assign({}, ajustes(), { tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio" })]);
+      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([Object.assign({}, ajustes(), { tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio", meta: milesAPesos($("cfgMeta").value) || 100000 })]);
       await rpc("guardar_config", { p_pin: S.pin, p_nombre: nombre, p_servicios: servicios });
       S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); toast("Guardado");
     } catch (e) { toast(e.message); }
