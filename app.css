@@ -364,3 +364,16 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .cambio-editar{border-left-color:#C98A00;background:rgba(242,183,5,.14)}
 .cambio-editar b{color:#9A6A00}
 @media (prefers-color-scheme:dark){.cambio-borrar b{color:#FF8A80}.cambio-editar b{color:#F5C431}.cambio-borrar{background:rgba(220,70,60,.2)}.cambio-editar{background:rgba(245,196,49,.16)}}
+
+/* Mis ganancias (trabajador) */
+.gan-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;min-width:0}
+.gan-stats>div{min-width:0;background:rgba(30,122,79,.12);border:1px solid rgba(30,122,79,.35);border-radius:10px;padding:10px 4px;display:grid;gap:2px;text-align:center}
+.gan-stats span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2)}
+.gan-stats b{font-family:var(--display);font-size:clamp(15px,4.6vw,22px);color:var(--good);white-space:nowrap}
+.gan-dias summary{cursor:pointer;font-weight:700;padding:6px 0}
+.gan-dias dl{margin:6px 0 0;display:grid;gap:4px;max-height:260px;overflow:auto}
+.gan-dias dl>div{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.gan-dias dt{color:var(--ink-2)} .gan-dias dd{margin:0;font-weight:700}
+@media (prefers-color-scheme:dark){.gan-stats>div{background:rgba(46,170,110,.18)}.gan-stats b{color:#5FD39A}}
+
+.ganancias{min-width:0}.gan-dias dt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gan-dias dd{flex-shrink:0}

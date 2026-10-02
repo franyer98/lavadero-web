@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 12:15";
+  const APP_VERSION = "2026-10-02 12:18";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -280,7 +280,7 @@
       banner("");
       $("syncState").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
       if (S.edit && silencioso) return; // no interrumpir mientras se edita
-      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); }
+      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); if (!esDueno()) cargarGanancias(); }
       if (silencioso && document.activeElement && /^(movValor|ajusteValor|alDiaFecha)$/.test(document.activeElement.id)) return;
       renderDia();
     } catch (e) {
@@ -364,6 +364,48 @@
     const entregar = dest === "dueno" ? mitad - t.transf : mitad;
     return { mitad, entregar, dest };
   }
+  // ---------- Mis ganancias (solo el trabajador, solo vista) ----------
+  async function cargarGanancias() {
+    try {
+      const r = await rpc("mis_ganancias", { p_pin: S.pin, p_desde: shiftDate(S.hoy, -70), p_hasta: S.hoy });
+      S.ganDias = r.dias || [];
+    } catch (e) { if (!S.ganDias) S.ganDias = null; }   // si aún no se activó en Supabase, no se muestra
+    renderGanancias();
+  }
+  function renderGanancias() {
+    const box = $("ganBox");
+    if (esDueno() || !S.ganDias) { box.hidden = true; return; }
+    box.hidden = false;
+    const hoy = S.hoy;
+    const ventas = {}; S.ganDias.forEach(d => { ventas[d.fecha] = { v: Number(d.ventas) || 0, n: Number(d.carros) || 0 }; });
+    if (typeof S.totHoy === "number") ventas[hoy] = { v: S.totHoy, n: (ventas[hoy] || {}).n || 0 };
+    const mitad = f => (ventas[f] ? ventas[f].v / 2 : 0);
+    const dow = new Date(hoy + "T12:00:00Z").getUTCDay();
+    const lunes = shiftDate(hoy, -((dow + 6) % 7));
+    const mes = hoy.slice(0, 7);
+    const [y, m] = mes.split("-").map(Number);
+    const mesAnt = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+    let sem = 0, mesT = 0, antT = 0, antHastaHoy = 0;
+    const diaHoy = Number(hoy.slice(8));
+    Object.keys(ventas).forEach(f => {
+      const g = mitad(f);
+      if (f >= lunes && f <= hoy) sem += g;
+      if (f.startsWith(mes)) mesT += g;
+      if (f.startsWith(mesAnt)) { antT += g; if (Number(f.slice(8)) <= diaHoy) antHastaHoy += g; }
+    });
+    $("gHoy").textContent = money(mitad(hoy));
+    $("gSem").textContent = money(sem);
+    $("gMes").textContent = money(mesT);
+    const nombreMesAnt = new Date(Date.UTC(m === 1 ? y - 1 : y, (m + 10) % 12, 15)).toLocaleDateString("es-CO", { month: "long", timeZone: "UTC" });
+    if (antT > 0) {
+      const dif = mesT - antHastaHoy;
+      $("gComp").textContent = `En ${nombreMesAnt} ganaste ${money(antT)} en total. ` +
+        (dif === 0 ? `Vas igual que a esta altura de ${nombreMesAnt}.` : `Vas ${money(Math.abs(dif)).replace(" ", "\u00a0")} ${dif > 0 ? "arriba" : "abajo"} comparado con esta misma fecha de ${nombreMesAnt}.`);
+    } else $("gComp").textContent = "Tu ganancia es la mitad de lo que se lava cada día.";
+    const dias = Object.keys(ventas).filter(f => ventas[f].v > 0).sort().reverse().slice(0, 21);
+    $("gDias").innerHTML = dias.map(f => `<div><dt>${esc(prettyDate(f, { weekday: "short", day: "numeric", month: "short" }).replace(/\s*(de\s*)?\d{4}$/, ""))}${ventas[f].n ? ` · ${ventas[f].n} ${ventas[f].n === 1 ? "lavado" : "lavados"}` : ""}</dt><dd>${money(mitad(f))}</dd></div>`).join("") || `<p class="hint">Aún no hay días con lavados.</p>`;
+  }
+
   // ---------- Cuentas al día ----------
   const alDia = () => ajustes().alDia || null;
   async function guardarAjuste(cambios) {
@@ -592,6 +634,7 @@
     $("ticketFecha").textContent = (esHoy ? "Hoy · " : "") + prettyDate(S.fecha);
     $("totVentas").textContent = money(t.total);
     renderMeta(t.total);
+    if (!esDueno() && S.fecha === S.hoy) { S.totHoy = t.total; renderGanancias(); }
     $("totCarros").textContent = t.vehiculos;
     const orden = VEHICULOS.concat(Object.keys(t.porTipo).filter(k => !VEHICULOS.includes(k)));
     $("totMotos").textContent = orden.filter(k => t.porTipo[k]).map(k => `${t.porTipo[k]} ${t.porTipo[k] === 1 ? k.toLowerCase() : (PLURAL[k] || k.toLowerCase() + "s")}`).join(" · ") || "—";
