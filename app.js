@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 11:15";
+  const APP_VERSION = "2026-10-02 11:25";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -367,7 +367,7 @@
     const quien = v => v >= 0
       ? (soloVer ? "Debes " : "Te debe ") + money(v)
       : (soloVer ? "El dueño te debe " : "Le debes ") + money(-v);
-    const lista = c.dias.map(d => { const v = Math.round(calcReparto(d.t).entregar); return `<div><dt>${esc(corto(d.f))}</dt><dd class="txt-${claseFavor(v)}">${quien(v)}</dd></div>`; }).join("");
+    const lista = c.dias.map(d => { const v = Math.round(calcReparto(d.t).entregar); return `<div class="fila fila-${claseFavor(v) || "cero"}"><dt>${esc(corto(d.f))}</dt><dd class="txt-${claseFavor(v)}">${quien(v)}</dd></div>`; }).join("");
     const total = Math.round(c.debe);
     const textoTotal = total >= 0
       ? (soloVer ? "le debes entregar al dueño" : "te debe entregar")
@@ -524,7 +524,8 @@
     const txt = s == null ? "—" : money(s);
     $("saldoPrest").textContent = txt;
     $("saldoPrest").className = s > 0 ? "neg" : "";
-    $("saldoMini").textContent = s == null ? "" : (s > 0 ? `· debe ${money(s)}` : "· al día");
+    $("saldoMini").textContent = s == null ? "" : (s > 0 ? `debe ${money(s)}` : "al día");
+    $("saldoMini").className = s == null ? "saldo-mini" : (s > 0 ? "saldo-mini chip-mini contra" : "saldo-mini chip-mini favor");
   }
 
   function puedeBorrar(r) {
@@ -910,7 +911,7 @@
     $("histBody").innerHTML = S.dias.length ? S.dias.map(d => {
       const ok = alDia() && d.fecha <= alDia();
       const prest = d.prest || d.abonos ? [d.prest ? "préstamo " + money(d.prest) : "", d.abonos ? "abono " + money(d.abonos) : ""].filter(Boolean).join(" · ") : "";
-      return `<button type="button" class="hdia" data-f="${d.fecha}">
+      return `<button type="button" class="hdia hdia-${claseFavor(d.entregar) || "cero"}" data-f="${d.fecha}">
         <span class="hdia-top"><b>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short" }))}</b><b class="hdia-total">${money(Number(d.ventas))}</b></span>
         <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · <span class="txt-${claseFavor(d.entregar)}">${d.entregar < 0 ? "le debes " : "te debe "}${money(Math.abs(d.entregar))}</span>${prest ? " · " + prest : ""}</span>
         <span class="hdia-est ${ok ? "pos" : "neg"}">${ok ? "✓ Al día" : "Pendiente"}</span>
