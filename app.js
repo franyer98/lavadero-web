@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 13:30";
+  const APP_VERSION = "2026-10-02 13:32";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -446,6 +446,17 @@
         : dif < 0 ? `Te faltan <b>${esc(money(-dif))}</b> para alcanzar lo que llevabas a esta fecha de ${esc(nomMes(mesAnt).toLowerCase())}. ¡Tú puedes!`
         : `Vas igual que a esta misma fecha de ${esc(nomMes(mesAnt).toLowerCase())}.`;
     } else $("gComp").textContent = "Tu ganancia es la mitad de lo que se lava cada día. Cada lavado la hace crecer.";
+    // Lista día a día del mes (más reciente arriba) con barra proporcional
+    const diasConV = [];
+    for (let d = diaHoy; d >= 1; d--) { const f = `${mes}-${String(d).padStart(2, "0")}`; if (mitad(f) > 0 || f === hoy) diasConV.push(f); }
+    const maxDia = Math.max(1, ...diasConV.map(mitad));
+    $("gDdT").textContent = "Día a día de " + nomMes(mes).toLowerCase();
+    $("gDd").innerHTML = diasConV.map(f => {
+      const g = mitad(f), n = (ventas[f] || {}).n || 0;
+      const fecha = f === hoy ? "Hoy" : new Date(f + "T12:00:00Z").toLocaleDateString("es-CO", { weekday: "short", timeZone: "UTC" }).replace(".", "") + " " + Number(f.slice(8));
+      return `<div class="gdd ${f === hoy ? "hoy" : ""}"><span class="gdd-f">${esc(fecha)}<small>${n ? `${n} ${n === 1 ? "lavado" : "lavados"}` : "sin lavados aún"}</small></span>
+        <span class="gdd-b"><i style="width:${(g / maxDia * 100).toFixed(1)}%"></i></span><b>+${esc(money(g))}</b></div>`;
+    }).join("") || `<p class="hint">Aún no hay lavados este mes.</p>`;
     const porMes = {};
     Object.keys(ventas).forEach(f => { const k = f.slice(0, 7); if (k !== mes) porMes[k] = (porMes[k] || 0) + mitad(f); });
     const meses = Object.keys(porMes).filter(k => porMes[k] > 0).sort().reverse();
