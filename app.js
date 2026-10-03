@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-02 13:45";
+  const APP_VERSION = "2026-10-03 06:34";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -1146,9 +1146,9 @@
     $("histBody").innerHTML = S.dias.length ? S.dias.map(d => {
       const ok = alDia() && d.fecha <= alDia();
       const prest = d.prest || d.abonos ? [d.prest ? "préstamo " + money(d.prest) : "", d.abonos ? "abono " + money(d.abonos) : ""].filter(Boolean).join(" · ") : "";
-      return `<button type="button" class="hdia hdia-${claseFavor(d.entregar) || "cero"}" data-f="${d.fecha}">
+      return `<button type="button" class="hdia hdia-${ok ? "saldado" : (claseFavor(d.entregar) || "cero")}" data-f="${d.fecha}">
         <span class="hdia-top"><b>${esc(prettyDate(d.fecha, { weekday: "short", day: "numeric", month: "short" }))}</b><b class="hdia-total">${money(Number(d.ventas))}</b></span>
-        <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · <span class="txt-${claseFavor(d.entregar)}">${d.entregar < 0 ? "le debes " : "te debe "}${money(Math.abs(d.entregar))}</span>${prest ? " · " + prest : ""}</span>
+        <span class="hdia-sub">${d.carros} ${d.carros === 1 ? "vehículo" : "vehículos"} · <span class="${ok ? "txt-saldado" : "txt-" + claseFavor(d.entregar)}">${ok ? (d.entregar < 0 ? "le debías " : "te debía ") : (d.entregar < 0 ? "le debes " : "te debe ")}${money(Math.abs(d.entregar))}</span>${prest ? " · " + prest : ""}</span>
         <span class="hdia-est ${ok ? "pos" : "neg"}">${ok ? "✓ Al día" : "Pendiente"}</span>
       </button>`;
     }).join("") : `<p class="hint" style="padding:0 16px">Aún no hay días registrados.</p>`;

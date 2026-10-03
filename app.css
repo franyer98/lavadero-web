@@ -426,3 +426,7 @@ body.trab-reg #form{margin-top:12px}
 .nequi-res.todo{color:var(--good)} .nequi-res.falta{color:var(--bad)}
 .nequi-estado{font-weight:600}
 .nq-activo{display:inline-block;padding:2px 10px;border-radius:999px;background:#1E7A4F;color:#fff;font-weight:800;margin-right:6px}
+
+/* Días ya cuadrados: sin color ni parpadeo */
+.hdia-saldado{border-left-color:var(--line)}
+.txt-saldado{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-weight:600;text-decoration:line-through;text-decoration-thickness:1px}
