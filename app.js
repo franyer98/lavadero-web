@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-03 10:55";
+  const APP_VERSION = "2026-10-03 11:05";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -188,7 +188,7 @@
     document.body.classList.toggle("trab-cta", !esDueno() && t === "cta"); $("view-hist").hidden = t !== "hist"; $("view-aj").hidden = t !== "aj"; $("view-gan").hidden = t !== "gan";
     lsSet("lav_tab", t);
     if (t === "hist") cargarHist();
-    if (t === "aj") { renderCfgEditor(); renderNequiAjustes(); }
+    if (t === "aj") { renderCfgEditor(); renderNequiAjustes(); verEstadoSql(); }
     if (t === "gan") { renderGanancias(); cargarGanancias(); }
   }
   document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
@@ -383,6 +383,14 @@
     try { await guardarAjuste({ nequi: false }); activarAvisos(); toast("Confirmación con Nequi desactivada"); renderNequiAjustes(); renderDia(); } catch (e) { toast(e.message); }
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && S.nequiRevisar && S.tab === "aj") { S.nequiRevisar = false; renderNequiAjustes(); } });
+
+  async function verEstadoSql() {
+    const el = $("sqlEstado");
+    try {
+      const r = await rpc("estado_sql", { p_pin: S.pin });
+      el.innerHTML = `<span class="nq-activo">✓ Funcionando</span> Último cambio aplicado solo: <b>${esc(String(r.ultima || "").replace(/\.sql$/, "").replace(/^\d+_/, "").replace(/_/g, " "))}</b> (${esc(r.cuando || "")}).`;
+    } catch (e) { el.textContent = "Aún no hay cambios aplicados automáticamente."; }
+  }
 
   // ---------- Registro de cambios (solo el dueño) ----------
   function textoCambio(c) {

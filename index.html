@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-03_10:55">
+<link rel="stylesheet" href="app.css?v=2026-10-03_11:05">
 </head>
 <body>
 
@@ -200,6 +200,10 @@
       <div class="hint" id="compartirHint"></div>
     </div>
     <div class="panel">
+      <h2>Conexión automática con Supabase</h2>
+      <div class="nequi-estado" id="sqlEstado">Revisando…</div>
+    </div>
+    <div class="panel">
       <h2>Confirmar transferencias con Nequi</h2>
       <div class="hint">La app lee en tu celular las notificaciones de Nequi ("Recibiste $…") y marca como confirmadas las transferencias que registró el trabajador. Si una no llega en hora y media, te avisa.</div>
       <div class="nequi-estado" id="nequiEstado">Revisando…</div>
@@ -261,7 +265,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-03_10:55"></script>
-<script src="app.js?v=2026-10-03_10:55"></script>
+<script src="config.js?v=2026-10-03_11:05"></script>
+<script src="app.js?v=2026-10-03_11:05"></script>
 </body>
 </html>
