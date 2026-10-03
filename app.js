@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-03 06:34";
+  const APP_VERSION = "2026-10-03 10:55";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -334,8 +334,11 @@
     const t = r.creado ? Date.parse(r.creado) : NaN;
     return isNaN(t) ? 0 : (Date.now() - t) / 60000;
   }
+  const confirmadaManual = r => !!r.confirmada && Number(r.confirmada_valor) === Number(r.valor);
+  const transfConfirmada = r => confirmadaManual(r) || !!(S.cruceNequi && S.cruceNequi.get(r.id));
   function etiquetaNequi(r) {
-    if (!S.cruceNequi || !S.cruceNequi.has(r.id)) return "";
+    if (confirmadaManual(r)) return ' <span class="tag nq-ok">✓ Confirmada</span>';
+    if (!S.cruceNequi || !S.cruceNequi.has(r.id)) return r.pendiente ? "" : ' <span class="tag nq-esp">Por confirmar</span>';
     const n = S.cruceNequi.get(r.id);
     if (n) return ` <span class="tag nq-ok" title="Llegó a Nequi a las ${esc(n.hora)}">✓ Llegó a Nequi</span>`;
     if (S.fecha !== S.hoy || minutosDesde(r) > NEQUI_ESPERA_MIN) return ' <span class="tag nq-no">Sin confirmar</span>';
@@ -344,11 +347,11 @@
   function renderNequiRes(regs) {
     const el = $("nequiRes");
     const trs = (regs || []).filter(r => r.tipo !== "gasto" && r.pago === "Transferencia");
-    if (!nequiActivo() || !Array.isArray(S.nequi) || !trs.length) { el.hidden = true; return; }
-    const ok = trs.filter(r => S.cruceNequi.get(r.id)).length;
+    if (!trs.length) { el.hidden = true; return; }
+    const ok = trs.filter(transfConfirmada).length;
     el.hidden = false;
     el.className = "nequi-res " + (ok === trs.length ? "todo" : "falta");
-    el.textContent = ok === trs.length ? `✓ ${ok === 1 ? "Confirmada" : "Todas confirmadas"} en Nequi` : `${ok} de ${trs.length} confirmadas en Nequi`;
+    el.textContent = ok === trs.length ? `✓ ${ok === 1 ? "Confirmada" : "Todas confirmadas"}` : `${ok} de ${trs.length} confirmadas`;
   }
   // Ajustes: estado del permiso en el celular del dueño
   async function renderNequiAjustes() {
@@ -797,11 +800,13 @@
     box.innerHTML = regs.map(r => {
       const g = r.tipo === "gasto";
       const tr = r.pago === "Transferencia";
+      const editando = S.edit && S.edit.id === r.id;
       const what = g
         ? `<b>${esAbono(r) ? "Abono a préstamo" : "Préstamo al trabajador"}</b><span>${esc(r.nota || "")}</span>`
-        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaNequi(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>`;
-      const editando = S.edit && S.edit.id === r.id;
-      return `<div class="item ${g ? (esAbono(r) ? "abono" : "gasto") : ""} ${editando ? "editing" : ""}">
+        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaNequi(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>${esDueno() && tr && !r.pendiente && !editando ? (confirmadaManual(r)
+            ? `<button class="conf-btn deshacer" data-act="desconf" data-id="${esc(r.id)}">Quitar confirmación</button>`
+            : (transfConfirmada(r) ? "" : `<button class="conf-btn" data-act="conf" data-id="${esc(r.id)}">✓ Confirmar que llegó</button>`)) : ""}`;
+            return `<div class="item ${g ? (esAbono(r) ? "abono" : "gasto") : ""} ${editando ? "editing" : ""}">
         <div class="hora num">${esc(r.hora || "")}</div>
         <div class="what">${what}</div>
         <div><div class="val num">${g ? (esAbono(r) ? "+" : "−") : ""}${money(r.valor)}</div>
@@ -835,6 +840,17 @@
       S.edit = { id: r.id, vehiculo: r.vehiculo || "Carro", pago: r.pago || "Efectivo", valor: r.valor, nota: r.nota || "", armed: false };
       renderDia();
       const el = document.querySelector(".editor"); if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return;
+    }
+    if (b.dataset.act === "conf" || b.dataset.act === "desconf") {
+      const ok = b.dataset.act === "conf";
+      b.disabled = true;
+      try {
+        const x = await rpc("confirmar_transf", { p_pin: S.pin, p_id: b.dataset.id, p_ok: ok });
+        (S.registrosServidor || []).forEach(r => { if (r.id === x.id) Object.assign(r, x); });
+        toast(ok ? `Transferencia de ${money(x.valor)} confirmada` : "Confirmación quitada");
+        renderDia(); cargarDia(true);
+      } catch (e) { toast(e.code === "x_pin" || /function|404/i.test(e.message) ? "Falta activar en Supabase (confirmar.sql)" : e.message); b.disabled = false; }
       return;
     }
     if (!S.edit) return;

@@ -430,3 +430,9 @@ body.trab-reg #form{margin-top:12px}
 /* Días ya cuadrados: sin color ni parpadeo */
 .hdia-saldado{border-left-color:var(--line)}
 .txt-saldado{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-weight:600;text-decoration:line-through;text-decoration-thickness:1px}
+
+/* Confirmar transferencias a mano */
+.conf-btn{display:inline-block;margin-top:6px;padding:6px 10px;border-radius:8px;border:0;background:#1E7A4F;color:#fff;font:700 13px var(--body);cursor:pointer;white-space:nowrap}
+.conf-btn.deshacer{background:transparent;color:var(--ink-2);text-decoration:underline;padding:2px 4px;font-weight:600}
+.item .what .tag{white-space:nowrap}
+.conf-btn.deshacer{display:block}
