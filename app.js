@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-03 11:05";
+  const APP_VERSION = "2026-10-03 11:08";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -145,7 +145,7 @@
   function activarAvisos() {
     const A = pluginAvisos(); if (!A) return;
     if (esDueno()) {
-      A.configurar({ url: CFG.SUPABASE_URL, key: CFG.SUPABASE_KEY, pin: S.pin, nequi: nequiActivo() })
+      A.configurar({ url: CFG.SUPABASE_URL, key: CFG.SUPABASE_KEY, pin: S.pin })
         .then(() => { if (!lsGet("lav_avisos_ok")) { lsSet("lav_avisos_ok", "1"); A.probar().catch(() => {}); } })
         .catch(() => {});
     } else {
@@ -188,7 +188,7 @@
     document.body.classList.toggle("trab-cta", !esDueno() && t === "cta"); $("view-hist").hidden = t !== "hist"; $("view-aj").hidden = t !== "aj"; $("view-gan").hidden = t !== "gan";
     lsSet("lav_tab", t);
     if (t === "hist") cargarHist();
-    if (t === "aj") { renderCfgEditor(); renderNequiAjustes(); verEstadoSql(); }
+    if (t === "aj") { renderCfgEditor(); verEstadoSql(); }
     if (t === "gan") { renderGanancias(); cargarGanancias(); }
   }
   document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
@@ -275,7 +275,6 @@
       }
       S.vistos = new Set(nuevos.map(x => x.id)); S.vistosFecha = f;
       if (esDueno()) cargarCambios(f, r.hoy);
-      cargarNequi(f);
       S.registrosServidor = nuevos; S.hoy = r.hoy;
       if (f === r.hoy) lsSet("lav_dia", JSON.stringify({ fecha: f, registros: nuevos }));
       subirCola();
@@ -299,50 +298,12 @@
     }
   }
 
-  // ---------- Confirmar transferencias con Nequi ----------
-  const NEQUI_ESPERA_MIN = 90;
-  const nequiActivo = () => !!ajustes().nequi && transfDestino() === "dueno";
-  async function cargarNequi(f) {
-    if (!nequiActivo()) { S.nequi = null; return; }
-    try {
-      const r = await rpc("nequi_dia", { p_pin: S.pin, p_fecha: f });
-      if (f !== S.fecha) return;
-      const antes = JSON.stringify(S.nequi);
-      S.nequi = r.recibidos || [];
-      if (esDueno() && S.nequiVistos && f === S.hoy) {
-        const nuevos = S.nequi.filter(n => !S.nequiVistos.has(n.id));
-        if (nuevos.length) toast(`Llegó a tu Nequi ${money(nuevos[nuevos.length - 1].valor)}${nuevos[nuevos.length - 1].quien ? " de " + nuevos[nuevos.length - 1].quien : ""}`);
-      }
-      S.nequiVistos = new Set(S.nequi.map(n => n.id));
-      if (antes !== JSON.stringify(S.nequi)) renderDia();
-    } catch (e) { S.nequi = null; }
-  }
-  // Cruza cada transferencia registrada con un pago recibido del mismo valor (cada pago se usa una sola vez)
-  function cruzarNequi(regs) {
-    const m = new Map();
-    if (!nequiActivo() || !Array.isArray(S.nequi)) return m;
-    const libres = S.nequi.slice();
-    (regs || []).filter(r => r.tipo !== "gasto" && r.pago === "Transferencia")
-      .slice().sort((a, b) => String(a.creado || a.hora || "").localeCompare(String(b.creado || b.hora || "")))
-      .forEach(r => {
-        const i = libres.findIndex(n => Number(n.valor) === Number(r.valor));
-        m.set(r.id, i >= 0 ? libres.splice(i, 1)[0] : null);
-      });
-    return m;
-  }
-  function minutosDesde(r) {
-    const t = r.creado ? Date.parse(r.creado) : NaN;
-    return isNaN(t) ? 0 : (Date.now() - t) / 60000;
-  }
+  // ---------- Confirmar transferencias (el dueño, a mano) ----------
   const confirmadaManual = r => !!r.confirmada && Number(r.confirmada_valor) === Number(r.valor);
-  const transfConfirmada = r => confirmadaManual(r) || !!(S.cruceNequi && S.cruceNequi.get(r.id));
-  function etiquetaNequi(r) {
-    if (confirmadaManual(r)) return ' <span class="tag nq-ok">✓ Confirmada</span>';
-    if (!S.cruceNequi || !S.cruceNequi.has(r.id)) return r.pendiente ? "" : ' <span class="tag nq-esp">Por confirmar</span>';
-    const n = S.cruceNequi.get(r.id);
-    if (n) return ` <span class="tag nq-ok" title="Llegó a Nequi a las ${esc(n.hora)}">✓ Llegó a Nequi</span>`;
-    if (S.fecha !== S.hoy || minutosDesde(r) > NEQUI_ESPERA_MIN) return ' <span class="tag nq-no">Sin confirmar</span>';
-    return ' <span class="tag nq-esp">Esperando Nequi</span>';
+  const transfConfirmada = confirmadaManual;
+  function etiquetaConf(r) {
+    if (r.pendiente) return "";
+    return confirmadaManual(r) ? ' <span class="tag nq-ok">✓ Confirmada</span>' : ' <span class="tag nq-esp">Por confirmar</span>';
   }
   function renderNequiRes(regs) {
     const el = $("nequiRes");
@@ -353,36 +314,6 @@
     el.className = "nequi-res " + (ok === trs.length ? "todo" : "falta");
     el.textContent = ok === trs.length ? `✓ ${ok === 1 ? "Confirmada" : "Todas confirmadas"}` : `${ok} de ${trs.length} confirmadas`;
   }
-  // Ajustes: estado del permiso en el celular del dueño
-  async function renderNequiAjustes() {
-    const est = $("nequiEstado"), btn = $("nequiBtn"), off = $("nequiOff"), ay = $("nequiAyuda");
-    btn.hidden = off.hidden = ay.hidden = true;
-    if (transfDestino() !== "dueno") { est.textContent = "Solo funciona cuando las transferencias llegan a tu cuenta (cámbialo abajo en \"¿A qué cuenta llegan las transferencias?\")."; return; }
-    const A = pluginAvisos();
-    if (!A) { est.textContent = "Esto funciona solo en la app instalada en tu celular (no en el navegador)."; return; }
-    let permiso = false;
-    try { permiso = !!(await A.estadoNequi()).permiso; }
-    catch (e) { est.innerHTML = 'Tu app es una versión anterior. <a href="https://github.com/franyer98/lavadero-app/releases/latest/download/CajaLavadero.apk">Instala la app nueva</a> encima de la que tienes (no se borra nada) y vuelve aquí.'; return; }
-    if (permiso && ajustes().nequi) {
-      est.innerHTML = '<span class="nq-activo">✓ Activo</span> Las transferencias se confirman solas con tu Nequi.';
-      off.hidden = false;
-    } else if (permiso) {
-      est.textContent = "Permiso dado. Activando…";
-      try { await guardarAjuste({ nequi: true }); activarAvisos(); toast("Confirmación con Nequi activada"); renderDia(); } catch (e) { toast(e.message); }
-      return renderNequiAjustes();
-    } else {
-      est.textContent = "Falta dar permiso: toca el botón, busca \"Caja del Lavadero\" en la lista y actívalo.";
-      btn.hidden = false; ay.hidden = false;
-    }
-  }
-  $("nequiBtn").addEventListener("click", async () => {
-    const A = pluginAvisos(); if (!A) return;
-    try { await A.permisoNequi(); S.nequiRevisar = true; } catch (e) { toast("No se pudo abrir el permiso"); }
-  });
-  $("nequiOff").addEventListener("click", async () => {
-    try { await guardarAjuste({ nequi: false }); activarAvisos(); toast("Confirmación con Nequi desactivada"); renderNequiAjustes(); renderDia(); } catch (e) { toast(e.message); }
-  });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && S.nequiRevisar && S.tab === "aj") { S.nequiRevisar = false; renderNequiAjustes(); } });
 
   async function verEstadoSql() {
     const el = $("sqlEstado");
@@ -803,7 +734,6 @@
       box.innerHTML = `<div class="empty">${esHoy ? "Todavía no hay lavados hoy." : "No hay registros este día."}</div>`;
       return;
     }
-    S.cruceNequi = cruzarNequi(regs);
     renderNequiRes(regs);
     box.innerHTML = regs.map(r => {
       const g = r.tipo === "gasto";
@@ -811,7 +741,7 @@
       const editando = S.edit && S.edit.id === r.id;
       const what = g
         ? `<b>${esAbono(r) ? "Abono a préstamo" : "Préstamo al trabajador"}</b><span>${esc(r.nota || "")}</span>`
-        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaNequi(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>${esDueno() && tr && !r.pendiente && !editando ? (confirmadaManual(r)
+        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaConf(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>${esDueno() && tr && !r.pendiente && !editando ? (confirmadaManual(r)
             ? `<button class="conf-btn deshacer" data-act="desconf" data-id="${esc(r.id)}">Quitar confirmación</button>`
             : (transfConfirmada(r) ? "" : `<button class="conf-btn" data-act="conf" data-id="${esc(r.id)}">✓ Confirmar que llegó</button>`)) : ""}`;
             return `<div class="item ${g ? (esAbono(r) ? "abono" : "gasto") : ""} ${editando ? "editing" : ""}">
@@ -1195,7 +1125,7 @@
     try {
       const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([Object.assign({}, ajustes(), { tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio", meta: milesAPesos($("cfgMeta").value) || 100000 })]);
       await rpc("guardar_config", { p_pin: S.pin, p_nombre: nombre, p_servicios: servicios });
-      S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); toast("Guardado"); activarAvisos(); renderNequiAjustes();
+      S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); toast("Guardado"); activarAvisos();
     } catch (e) { toast(e.message); }
   });
 
