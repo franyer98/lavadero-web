@@ -11,9 +11,75 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-07_18:48">
+<link rel="stylesheet" href="app.css?v=2026-10-07_18:52">
 </head>
 <body>
+<!-- Animación de entrada: muñeco lavando un carro (se ve al abrir la app) -->
+<div id="intro" aria-hidden="true">
+  <svg viewBox="0 0 340 230" class="intro-svg">
+    <defs>
+      <linearGradient id="iCielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B8398"/><stop offset="1" stop-color="#0F4C5C"/></linearGradient>
+      <linearGradient id="iCarro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FA8E8"/><stop offset="1" stop-color="#1F6FB2"/></linearGradient>
+    </defs>
+    <rect width="340" height="230" rx="24" fill="url(#iCielo)"/>
+    <ellipse cx="170" cy="196" rx="150" ry="10" fill="#0A3440" opacity=".55"/>
+    <!-- charco de agua -->
+    <ellipse class="i-charco" cx="150" cy="196" rx="95" ry="6" fill="#7FD3F7" opacity=".45"/>
+    <!-- carro -->
+    <g class="i-carro">
+      <path d="M40 160 Q42 128 78 124 L112 96 Q120 88 134 88 L198 88 Q212 88 222 98 L248 124 Q286 128 290 152 L290 166 Q290 172 284 172 L46 172 Q40 172 40 166 Z" fill="url(#iCarro)"/>
+      <path d="M122 100 Q127 95 136 95 L164 95 L164 124 L98 124 Z" fill="#CFEFFF"/>
+      <path d="M172 95 L196 95 Q205 95 212 102 L234 124 L172 124 Z" fill="#CFEFFF"/>
+      <rect x="166" y="95" width="4" height="29" fill="#1F6FB2"/>
+      <rect x="150" y="134" width="16" height="4" rx="2" fill="#0F4C5C" opacity=".6"/>
+      <rect x="214" y="134" width="16" height="4" rx="2" fill="#0F4C5C" opacity=".6"/>
+      <circle cx="282" cy="146" r="6" fill="#FFE27A"/>
+      <rect x="40" y="150" width="10" height="8" rx="3" fill="#E63946"/>
+      <g class="i-rueda"><circle cx="96" cy="172" r="19" fill="#1B1B1B"/><circle cx="96" cy="172" r="8" fill="#B8C4C8"/><rect x="94" y="158" width="4" height="28" fill="#8A9599"/></g>
+      <g class="i-rueda"><circle cx="238" cy="172" r="19" fill="#1B1B1B"/><circle cx="238" cy="172" r="8" fill="#B8C4C8"/><rect x="236" y="158" width="4" height="28" fill="#8A9599"/></g>
+      <!-- espuma sobre el carro -->
+      <g class="i-espuma" fill="#FFFFFF">
+        <circle cx="120" cy="140" r="9"/><circle cx="132" cy="134" r="11"/><circle cx="146" cy="141" r="8"/><circle cx="110" cy="147" r="6"/>
+      </g>
+      <!-- brillos -->
+      <g class="i-brillo" fill="#FFFFFF">
+        <path d="M200 108 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/>
+        <path d="M262 136 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+        <path d="M78 136 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+      </g>
+    </g>
+    <!-- muñeco -->
+    <g class="i-mono">
+      <!-- piernas -->
+      <rect x="44" y="160" width="10" height="30" rx="5" fill="#23395B"/>
+      <rect x="58" y="160" width="10" height="30" rx="5" fill="#23395B"/>
+      <ellipse cx="48" cy="191" rx="9" ry="5" fill="#111"/><ellipse cx="64" cy="191" rx="9" ry="5" fill="#111"/>
+      <!-- cuerpo -->
+      <rect x="38" y="118" width="36" height="48" rx="14" fill="#F2B705"/>
+      <rect x="46" y="128" width="20" height="12" rx="4" fill="#0F4C5C"/>
+      <!-- brazo que restriega -->
+      <g class="i-brazo">
+        <rect x="66" y="124" width="40" height="10" rx="5" fill="#E9B48A"/>
+        <rect x="100" y="117" width="22" height="16" rx="6" fill="#FFD23F" stroke="#E0A800" stroke-width="2"/>
+        <circle cx="106" cy="117" r="4" fill="#fff"/><circle cx="116" cy="115" r="5" fill="#fff"/>
+      </g>
+      <!-- cabeza -->
+      <circle cx="56" cy="100" r="18" fill="#E9B48A"/>
+      <circle cx="62" cy="98" r="2.6" fill="#1B1B1B"/><circle cx="50" cy="98" r="2.6" fill="#1B1B1B"/>
+      <path d="M48 107 Q56 114 64 107" stroke="#1B1B1B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <circle cx="45" cy="104" r="3" fill="#F28B82" opacity=".7"/><circle cx="67" cy="104" r="3" fill="#F28B82" opacity=".7"/>
+      <!-- gorra -->
+      <path d="M38 94 Q40 78 56 78 Q72 78 74 92 Z" fill="#E63946"/>
+      <rect x="62" y="89" width="20" height="5" rx="2.5" fill="#B8322A"/>
+    </g>
+    <!-- burbujas -->
+    <g class="i-burbujas" fill="none" stroke="#FFFFFF" stroke-width="2">
+      <circle class="b1" cx="118" cy="118" r="6"/><circle class="b2" cx="134" cy="122" r="4"/><circle class="b3" cx="104" cy="126" r="5"/>
+      <circle class="b4" cx="150" cy="126" r="3.5"/><circle class="b5" cx="126" cy="128" r="7"/>
+    </g>
+  </svg>
+  <div class="intro-txt">¡A dejarlo brillando!</div>
+</div>
 
 <!-- ============ LOGIN ============ -->
 <section id="login" class="login" hidden>
@@ -277,7 +343,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-07_18:48"></script>
-<script src="app.js?v=2026-10-07_18:48"></script>
+<script src="config.js?v=2026-10-07_18:52"></script>
+<script src="app.js?v=2026-10-07_18:52"></script>
 </body>
 </html>

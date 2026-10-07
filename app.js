@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 18:48";
+  const APP_VERSION = "2026-10-07 18:52";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -1259,6 +1259,15 @@
     const a = document.createElement("a"); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
+
+  // ---------- Animación de entrada ----------
+  (function intro() {
+    const el = document.getElementById("intro"); if (!el) return;
+    const quitar = () => { el.classList.add("sale"); setTimeout(() => el.remove(), 500); };
+    if (/[?&]v=/.test(location.search)) { el.remove(); return; }   // recarga por actualización: sin animación
+    el.addEventListener("click", quitar);
+    setTimeout(quitar, 2800);
+  })();
 
   // ---------- Arranque ----------
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {

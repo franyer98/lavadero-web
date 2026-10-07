@@ -450,3 +450,27 @@ body.trab-reg #form{margin-top:12px}
 .deu-item.pagada .deu-val{text-decoration:line-through}
 .linkbtn.armado{color:var(--bad);font-weight:700}
 .deu-tot{display:inline-block;padding:2px 12px;border-radius:999px;color:#fff}.deu-tot.contra{background:#B8322A}.deu-tot.favor{background:#1E7A4F}
+
+/* Animación de entrada */
+#intro{position:fixed;inset:0;z-index:200;display:grid;place-content:center;justify-items:center;gap:14px;background:#0F4C5C;transition:opacity .45s ease}
+#intro.sale{opacity:0;pointer-events:none}
+.intro-svg{width:min(86vw,360px);height:auto;filter:drop-shadow(0 10px 24px rgba(0,0,0,.35))}
+.intro-txt{color:#fff;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:.03em;text-transform:uppercase;animation:introTxt 1.2s ease-out both}
+.i-carro{animation:introRebote 1.4s ease-in-out infinite;transform-origin:165px 172px}
+.i-brazo{transform-origin:68px 129px;animation:introRestriega .5s ease-in-out infinite alternate}
+.i-mono{animation:introMono 1s ease-in-out infinite alternate;transform-origin:56px 190px}
+.i-espuma circle{animation:introEspuma 1s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+.i-brillo path{animation:introBrillo 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.i-brillo path:nth-child(2){animation-delay:.4s}.i-brillo path:nth-child(3){animation-delay:.8s}
+.i-burbujas circle{animation:introBurbuja 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.i-burbujas .b2{animation-delay:.3s}.i-burbujas .b3{animation-delay:.6s}.i-burbujas .b4{animation-delay:.9s}.i-burbujas .b5{animation-delay:1.2s}
+.i-charco{animation:introCharco 1.6s ease-in-out infinite alternate}
+@keyframes introRestriega{from{transform:rotate(-14deg)}to{transform:rotate(12deg)}}
+@keyframes introMono{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+@keyframes introRebote{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes introEspuma{from{transform:scale(.85)}to{transform:scale(1.1)}}
+@keyframes introBrillo{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes introBurbuja{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
+@keyframes introCharco{from{opacity:.3}to{opacity:.55}}
+@keyframes introTxt{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#intro *{animation:none!important}}
