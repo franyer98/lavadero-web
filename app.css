@@ -436,3 +436,17 @@ body.trab-reg #form{margin-top:12px}
 .conf-btn.deshacer{background:transparent;color:var(--ink-2);text-decoration:underline;padding:2px 4px;font-weight:600}
 .item .what .tag{white-space:nowrap}
 .conf-btn.deshacer{display:block}
+
+/* Lo que el dueño le debe al trabajador */
+.deu-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed var(--line)}
+.deu-txt{display:grid;gap:2px;min-width:0}
+.deu-txt b{font-weight:700;overflow-wrap:anywhere}
+.deu-txt small{color:var(--ink-2);font-size:12px}
+.deu-der{display:grid;justify-items:end;gap:4px;flex-shrink:0}
+.deu-val{font-weight:800;font-size:16px;white-space:nowrap}
+.deu-acc{display:flex;gap:8px;align-items:center}
+.deu-acc .conf-btn{margin-top:0}
+.deu-item.pagada{opacity:.6}
+.deu-item.pagada .deu-val{text-decoration:line-through}
+.linkbtn.armado{color:var(--bad);font-weight:700}
+.deu-tot{display:inline-block;padding:2px 12px;border-radius:999px;color:#fff}.deu-tot.contra{background:#B8322A}.deu-tot.favor{background:#1E7A4F}

@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-03 11:08";
+  const APP_VERSION = "2026-10-07 18:48";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -173,6 +173,7 @@
     $("fecha").value = S.fecha;
     setTab(esDueno() ? (["dia", "hist", "aj"].includes(lsGet("lav_tab")) ? lsGet("lav_tab") : "dia") : "dia");
     renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos(); renderCola(); subirCola();
+    S.deudas = null; renderDeudas(); cargarDeudas();
     cargarDia();
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refrescar(); }, REFRESCO_MS);
@@ -284,7 +285,7 @@
       banner("");
       $("syncState").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
       if (S.edit && silencioso) return; // no interrumpir mientras se edita
-      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); if (!esDueno()) cargarGanancias(); }
+      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); cargarDeudas(); if (!esDueno()) cargarGanancias(); }
       if (silencioso && document.activeElement && /^(movValor|ajusteValor|alDiaFecha)$/.test(document.activeElement.id)) return;
       renderDia();
     } catch (e) {
@@ -946,6 +947,69 @@
     f.hidden = !open; $("abrirPrest").setAttribute("aria-expanded", String(open));
     $("abrirPrest").querySelector(".chev").textContent = open ? "−" : "+";
     if (open) { cargarMovs(); }
+  });
+
+  // ---------- Lo que el dueño le debe al trabajador ----------
+  let deuArmado = null;
+  async function cargarDeudas() {
+    try { const r = await rpc("deudas_ver", { p_pin: S.pin }); S.deudas = r.deudas || []; S.deudaPend = Number(r.pendiente) || 0; }
+    catch (e) { if (!S.deudas) S.deudas = null; }   // si aún no existe en Supabase, no se muestra
+    renderDeudas();
+  }
+  function renderDeudas() {
+    const box = $("deuBox");
+    if (!Array.isArray(S.deudas)) { box.hidden = true; return; }
+    box.hidden = false;
+    const trab = nombreTrab() || "el trabajador", pend = S.deudaPend || 0;
+    $("deuTitulo").textContent = esDueno() ? `Lo que le debo a ${trab}` : "Lo que el dueño me debe";
+    const mini = $("deuMini");
+    mini.textContent = pend ? (esDueno() ? `le debes ${money(pend)}` : `te debe ${money(pend)}`) : "nada pendiente";
+    mini.className = "saldo-mini " + (pend ? "chip-mini " + (esDueno() ? "contra" : "favor") : "");
+    $("deuTotLbl").textContent = esDueno() ? `Le debes a ${trab}` : "El dueño te debe";
+    $("deuTotal").textContent = money(pend);
+    $("deuTotal").className = pend ? "deu-tot " + (esDueno() ? "contra" : "favor") : "";
+    const fecha = f => new Date(String(f).slice(0, 10) + "T12:00:00Z").toLocaleDateString("es-CO", { day: "numeric", month: "short", timeZone: "UTC" }).replace(".", "");
+    $("deuLista").innerHTML = S.deudas.length ? S.deudas.map(d => {
+      const pagada = !!d.pagado;
+      const acciones = !esDueno() ? "" : pagada
+        ? `<button type="button" class="linkbtn" data-deu="deshacer" data-id="${esc(d.id)}">Deshacer</button>`
+        : `<button type="button" class="conf-btn" data-deu="pagar" data-id="${esc(d.id)}">✓ Pagado</button>
+           <button type="button" class="linkbtn ${deuArmado === d.id ? "armado" : ""}" data-deu="borrar" data-id="${esc(d.id)}">${deuArmado === d.id ? "¿Borrar? Toca otra vez" : "Borrar"}</button>`;
+      return `<div class="deu-item ${pagada ? "pagada" : ""}">
+        <div class="deu-txt"><b>${esc(d.concepto)}</b><small>${esc(fecha(d.fecha))}${pagada ? " · pagado el " + esc(fecha(String(d.pagado).slice(0, 10))) : ""}</small></div>
+        <div class="deu-der"><span class="deu-val">${money(d.valor)}</span><div class="deu-acc">${acciones}</div></div>
+      </div>`;
+    }).join("") : `<p class="hint">${esDueno() ? "No le debes nada." : "El dueño no te debe nada."}</p>`;
+  }
+  $("abrirDeu").addEventListener("click", () => {
+    const c = $("deuCuerpo"), open = c.hidden;
+    c.hidden = !open; $("abrirDeu").setAttribute("aria-expanded", String(open));
+    $("abrirDeu").querySelector(".chev").textContent = open ? "−" : "+";
+    if (open) cargarDeudas();
+  });
+  $("deuForm").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const valor = milesAPesos($("deuValor").value), concepto = $("deuConcepto").value.trim();
+    if (!valor) { toast("Escribe el valor"); return; }
+    if (!concepto) { toast("Escribe por qué le debes"); return; }
+    $("deuGuardar").disabled = true;
+    try {
+      await rpc("deuda_guardar", { p_pin: S.pin, p: { concepto, valor } });
+      $("deuValor").value = ""; $("deuConcepto").value = ""; $("deuValor").dispatchEvent(new Event("input", { bubbles: true }));
+      toast(`Anotado: le debes ${money(valor)}`); await cargarDeudas();
+    } catch (e) { toast(e.message); }
+    $("deuGuardar").disabled = false;
+  });
+  $("deuLista").addEventListener("click", async ev => {
+    const b = ev.target.closest("button[data-deu]"); if (!b || !esDueno()) return;
+    const id = b.dataset.id, act = b.dataset.deu;
+    if (act === "borrar" && deuArmado !== id) { deuArmado = id; renderDeudas(); setTimeout(() => { if (deuArmado === id) { deuArmado = null; renderDeudas(); } }, 4000); return; }
+    b.disabled = true;
+    try {
+      if (act === "borrar") { await rpc("deuda_borrar", { p_pin: S.pin, p_id: id }); deuArmado = null; toast("Borrado"); }
+      else { const x = await rpc("deuda_pagar", { p_pin: S.pin, p_id: id, p_ok: act === "pagar" }); toast(act === "pagar" ? `Pagado: ${money(x.valor)}` : "Vuelve a quedar pendiente"); }
+      await cargarDeudas();
+    } catch (e) { toast(e.message); b.disabled = false; }
   });
 
   function cerrarPrest() { $("prestForm").hidden = true; $("abrirPrest").setAttribute("aria-expanded", "false"); $("abrirPrest").querySelector(".chev").textContent = "+"; }

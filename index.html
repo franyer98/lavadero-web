@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-03_11:08">
+<link rel="stylesheet" href="app.css?v=2026-10-07_18:48">
 </head>
 <body>
 
@@ -141,6 +141,26 @@
       </form>
     </div>
 
+    <!-- Lo que el dueño le debe al trabajador (externo al lavadero, restantes) -->
+    <div class="panel prest deu b-cta" id="deuBox" hidden>
+      <button type="button" class="prest-toggle" id="abrirDeu" aria-expanded="false">
+        <span><span id="deuTitulo">Lo que le debo al trabajador</span> <small class="saldo-mini" id="deuMini"></small></span><span class="chev" aria-hidden="true">+</span>
+      </button>
+      <div id="deuCuerpo" class="stack" hidden>
+        <div class="saldo-box num"><span id="deuTotLbl">Le debes</span><b id="deuTotal">—</b></div>
+        <form id="deuForm" class="stack solo-dueno" autocomplete="off">
+          <label class="field"><span>¿Por qué le debes?</span>
+            <input id="deuConcepto" maxlength="120" placeholder="Ej. restante del domingo, compra de jabón"></label>
+          <label class="field"><span>Valor (en miles)</span>
+            <input id="deuValor" class="money num" inputmode="decimal" placeholder="En miles: 20 = $20.000"></label>
+          <button class="primary" type="submit" id="deuGuardar">Anotar lo que le debo</button>
+          <div class="hint">Es aparte de la caja y de los préstamos. Cuando le pagues, toca "Pagado".</div>
+        </form>
+        <p class="hint solo-trab">Esto lo anota el dueño. Aquí ves lo que te debe y lo que ya te pagó.</p>
+        <div id="deuLista"></div>
+      </div>
+    </div>
+
     <div class="list b-reg">
       <h2>Registros <small id="listSub"></small></h2>
       <div id="items"></div>
@@ -257,7 +277,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-03_11:08"></script>
-<script src="app.js?v=2026-10-03_11:08"></script>
+<script src="config.js?v=2026-10-07_18:48"></script>
+<script src="app.js?v=2026-10-07_18:48"></script>
 </body>
 </html>
