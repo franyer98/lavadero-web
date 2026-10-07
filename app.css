@@ -474,3 +474,8 @@ body.trab-reg #form{margin-top:12px}
 @keyframes introCharco{from{opacity:.3}to{opacity:.55}}
 @keyframes introTxt{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#intro *{animation:none!important}}
+
+/* Día ya cuadrado: sin color ni parpadeo */
+.debe.saldado{background:var(--surface-2)!important;color:var(--ink-2)!important;animation:none!important}
+.debe.saldado span{color:var(--ink)!important}
+.debe.saldado b{color:var(--ink-2)!important;text-decoration:line-through;text-decoration-thickness:2px;animation:none!important}

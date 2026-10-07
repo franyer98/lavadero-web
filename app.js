@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 18:52";
+  const APP_VERSION = "2026-10-07 18:54";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -681,8 +681,14 @@
     $("rLista").innerHTML = filas.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
     const debe = Math.round(r.entregar);
     const caja = document.querySelector("#reparto .debe");
-    if (caja) { caja.classList.remove("favor", "contra"); const cl = claseFavor(debe); if (cl) caja.classList.add(cl); }
-    if (debe >= 0) {
+    const cuadrado = !!alDia() && S.fecha <= alDia();
+    if (caja) { caja.classList.remove("favor", "contra", "saldado"); const cl = cuadrado ? (debe ? "saldado" : "") : claseFavor(debe); if (cl) caja.classList.add(cl); }
+    if (cuadrado) {
+      $("rDebeLbl").textContent = !debe ? "✓ Día cuadrado" : debe > 0
+        ? (esDueno() ? "✓ Día cuadrado · ya te entregó" : "✓ Día cuadrado · ya le entregaste")
+        : (esDueno() ? "✓ Día cuadrado · ya le pagaste" : "✓ Día cuadrado · ya te pagó");
+      $("rDebe").textContent = money(Math.abs(debe)); $("rDebe").className = "";
+    } else if (debe >= 0) {
       $("rDebeLbl").textContent = esDueno() ? "El trabajador te debe entregar" : "Le debes entregar al dueño";
       $("rDebe").textContent = money(debe); $("rDebe").className = "";
     } else {
