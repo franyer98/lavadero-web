@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 18:54";
+  const APP_VERSION = "2026-10-07 18:55";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -956,7 +956,7 @@
   });
 
   // ---------- Lo que el dueño le debe al trabajador ----------
-  let deuArmado = null;
+  let deuArmado = null, deuEdit = null;
   async function cargarDeudas() {
     try { const r = await rpc("deudas_ver", { p_pin: S.pin }); S.deudas = r.deudas || []; S.deudaPend = Number(r.pendiente) || 0; }
     catch (e) { if (!S.deudas) S.deudas = null; }   // si aún no existe en Supabase, no se muestra
@@ -977,9 +977,16 @@
     const fecha = f => new Date(String(f).slice(0, 10) + "T12:00:00Z").toLocaleDateString("es-CO", { day: "numeric", month: "short", timeZone: "UTC" }).replace(".", "");
     $("deuLista").innerHTML = S.deudas.length ? S.deudas.map(d => {
       const pagada = !!d.pagado;
+      if (esDueno() && deuEdit === d.id) return `<div class="deu-item deu-edit">
+        <label class="field"><span>¿Por qué le debes?</span><input id="deuEdC" maxlength="120" value="${esc(d.concepto)}"></label>
+        <label class="field"><span>Valor (en miles)</span><input id="deuEdV" class="money num" inputmode="decimal" value="${pesosAMiles(d.valor)}"></label>
+        <div class="deu-acc"><button type="button" class="primary" data-deu="guardar" data-id="${esc(d.id)}">Guardar</button>
+          <button type="button" class="linkbtn" data-deu="cancelar" data-id="${esc(d.id)}">Cancelar</button></div>
+      </div>`;
       const acciones = !esDueno() ? "" : pagada
         ? `<button type="button" class="linkbtn" data-deu="deshacer" data-id="${esc(d.id)}">Deshacer</button>`
         : `<button type="button" class="conf-btn" data-deu="pagar" data-id="${esc(d.id)}">✓ Pagado</button>
+           <button type="button" class="linkbtn" data-deu="editar" data-id="${esc(d.id)}">Editar</button>
            <button type="button" class="linkbtn ${deuArmado === d.id ? "armado" : ""}" data-deu="borrar" data-id="${esc(d.id)}">${deuArmado === d.id ? "¿Borrar? Toca otra vez" : "Borrar"}</button>`;
       return `<div class="deu-item ${pagada ? "pagada" : ""}">
         <div class="deu-txt"><b>${esc(d.concepto)}</b><small>${esc(fecha(d.fecha))}${pagada ? " · pagado el " + esc(fecha(String(d.pagado).slice(0, 10))) : ""}</small></div>
@@ -1009,6 +1016,16 @@
   $("deuLista").addEventListener("click", async ev => {
     const b = ev.target.closest("button[data-deu]"); if (!b || !esDueno()) return;
     const id = b.dataset.id, act = b.dataset.deu;
+    if (act === "editar") { deuEdit = id; deuArmado = null; renderDeudas(); const i = $("deuEdV"); if (i) i.focus(); return; }
+    if (act === "cancelar") { deuEdit = null; renderDeudas(); return; }
+    if (act === "guardar") {
+      const valor = milesAPesos($("deuEdV").value), concepto = $("deuEdC").value.trim();
+      if (!valor) { toast("Escribe el valor"); return; }
+      b.disabled = true;
+      try { await rpc("deuda_guardar", { p_pin: S.pin, p: { id, concepto: concepto || "Sin concepto", valor } }); deuEdit = null; toast(`Actualizado: ${money(valor)}`); await cargarDeudas(); }
+      catch (e) { toast(e.message); b.disabled = false; }
+      return;
+    }
     if (act === "borrar" && deuArmado !== id) { deuArmado = id; renderDeudas(); setTimeout(() => { if (deuArmado === id) { deuArmado = null; renderDeudas(); } }, 4000); return; }
     b.disabled = true;
     try {

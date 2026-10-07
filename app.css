@@ -479,3 +479,5 @@ body.trab-reg #form{margin-top:12px}
 .debe.saldado{background:var(--surface-2)!important;color:var(--ink-2)!important;animation:none!important}
 .debe.saldado span{color:var(--ink)!important}
 .debe.saldado b{color:var(--ink-2)!important;text-decoration:line-through;text-decoration-thickness:2px;animation:none!important}
+.deu-item.deu-edit{display:grid;gap:8px}
+.deu-item.deu-edit .deu-acc{justify-content:flex-start}
