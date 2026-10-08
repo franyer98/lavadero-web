@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 19:30";
+  const APP_VERSION = "2026-10-08 18:05";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -530,9 +530,22 @@
     } catch (e) { S.cuentas = null; }
     renderCuentas();
   }
+  // El día de hoy en "Cuentas pendientes" usa los mismos lavados que se ven en pantalla (sin esperar al servidor)
+  function hoyEnCuentas() {
+    const c = S.cuentas;
+    if (!c || S.fecha !== S.hoy || !Array.isArray(S.registros)) return;
+    if (c.desde && S.hoy <= c.desde) return;              // hoy ya está cuadrado
+    const t = totals(S.registros);
+    const i = c.dias.findIndex(d => d.f === S.hoy);
+    if (t.total > 0) { const d = { f: S.hoy, t }; if (i >= 0) c.dias[i] = d; else c.dias.push(d); }
+    else if (i >= 0) c.dias.splice(i, 1);
+    c.dias.sort((a, b) => a.f.localeCompare(b.f));
+    c.debe = c.dias.reduce((a, d) => a + calcReparto(d.t).entregar, 0);
+  }
   function renderCuentas() {
     const box = $("cuentasBox"), c = S.cuentas;
     if (!c) return;
+    hoyEnCuentas();
     const soloVer = !esDueno();
     box.hidden = false;
     const corto = f => prettyDate(f, { weekday: "short", day: "numeric", month: "short" });
@@ -741,6 +754,7 @@
     $("ticketFecha").textContent = (esHoy ? "Hoy · " : "") + prettyDate(S.fecha);
     $("totVentas").textContent = money(t.total);
     renderMeta(t.total);
+    if (S.cuentas && S.fecha === S.hoy && !cuentasArmado) renderCuentas();
     if (!esDueno() && S.fecha === S.hoy) { S.totHoy = t.total; renderGanancias(); }
     $("totCarros").textContent = t.vehiculos;
     const orden = VEHICULOS.concat(Object.keys(t.porTipo).filter(k => !VEHICULOS.includes(k)));
