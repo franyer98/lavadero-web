@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 19:05";
+  const APP_VERSION = "2026-10-07 19:08";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -599,6 +599,7 @@
   }
   function celebrar(titulo, sub) {
     if (document.getElementById("fiesta")) return;
+    const ok = document.getElementById("okLavado"); if (ok) ok.remove();
     fanfarria();
     const capa = document.createElement("div");
     capa.id = "fiesta";
@@ -1126,6 +1127,41 @@
     finally { $("guardarPrest").disabled = false; }
   });
 
+  // Ventana de confirmación al guardar un lavado, con frases de ánimo
+  const FRASES = [
+    "¡Vamos bien, {n}!", "¡Eso es, {n}! Uno más", "¡Buen trabajo, {n}!", "¡Así se hace, {n}!",
+    "¡Imparable, {n}!", "¡Dejándolos brillando, {n}!", "¡Otro más a la cuenta, {n}!", "¡Sigue así, {n}!",
+    "¡Qué berraquera, {n}!", "¡Con toda, {n}!", "¡Ese es el ritmo, {n}!", "¡Excelente, {n}!",
+    "¡Vas volando, {n}!", "¡Brillante como el carro, {n}!", "¡Así se trabaja, {n}!"
+  ];
+  let fraseAnt = -1;
+  function fraseAnimo() {
+    let i; do { i = Math.floor(Math.random() * FRASES.length); } while (i === fraseAnt && FRASES.length > 1);
+    fraseAnt = i;
+    const n = nombreTrab();
+    return n ? FRASES[i].replace("{n}", n) : FRASES[i].replace(/,? ?\{n\}/, "");
+  }
+  function ventanaGuardado(veh, valor, pago, subido, totalDia) {
+    const vieja = document.getElementById("okLavado"); if (vieja) vieja.remove();
+    const t = { total: totalDia }, meta = metaDiaria();
+    const progreso = t.total >= meta ? `¡Meta del día cumplida! Llevan ${money(t.total)}`
+      : `Llevan ${money(t.total)} hoy · faltan ${money(meta - t.total)} para la meta`;
+    const el = document.createElement("div");
+    el.id = "okLavado";
+    el.innerHTML = `<div class="ok-card" role="status">
+      <div class="ok-foto"><img src="fotos/${esc(String(veh).toLowerCase())}.jpg" alt=""><span class="ok-check">✓</span></div>
+      <div class="ok-frase">${esc(fraseAnimo())}</div>
+      <div class="ok-det">${esc(veh)} · ${esc(money(valor))} · ${esc(pago)}</div>
+      ${subido ? "" : '<div class="ok-sin">Sin señal: quedó guardado en el celular y se sube solo</div>'}
+      <div class="ok-prog">${esc(progreso)}</div>
+      <div class="ok-bar"><i style="width:${Math.min(100, Math.round(t.total / meta * 100))}%"></i></div>
+    </div>`;
+    document.body.appendChild(el);
+    const cerrar = () => { el.classList.add("sale"); setTimeout(() => el.remove(), 300); };
+    el.addEventListener("click", cerrar);
+    setTimeout(cerrar, 2600);
+  }
+
   let guardando = false;
   $("form").addEventListener("submit", async ev => {
     ev.preventDefault();
@@ -1138,11 +1174,12 @@
     hint.textContent = "";
     guardando = true; $("guardar").disabled = true;
     try {
+      const totalAntes = totals(S.registros).total;
       const subido = await guardarRegistro(p);
-      toast(subido ? `${S.veh} ${money(valor)} guardado` : `Sin señal: ${S.veh} ${money(valor)} guardado en el celular, se sube solo`);
-      // Sin sonido al agregar lavados (solo suena la meta diaria)
+      const veh = S.veh, pago = S.pago;
       setValor(0); S.pago = "Efectivo"; renderForm();
       renderDia();
+      ventanaGuardado(veh, valor, pago, subido, totalAntes + valor);   // sin sonido: ventana de confirmación con ánimo
       if (subido) await cargarDia(true);
     } catch (e) {
       hint.textContent = "No se guardó. " + e.message;

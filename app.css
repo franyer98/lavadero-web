@@ -481,3 +481,21 @@ body.trab-reg #form{margin-top:12px}
 .debe.saldado b{color:var(--ink-2)!important;text-decoration:line-through;text-decoration-thickness:2px;animation:none!important}
 .deu-item.deu-edit{display:grid;gap:8px}
 .deu-item.deu-edit .deu-acc{justify-content:flex-start}
+
+/* Ventana de confirmación al guardar un lavado */
+#okLavado{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:rgba(8,20,26,.45);animation:okEntra .2s ease}
+#okLavado.sale{opacity:0;transition:opacity .3s}
+.ok-card{width:min(330px,calc(100vw - 40px));box-sizing:border-box;background:var(--surface);color:var(--ink);border-radius:20px;padding:20px 18px;text-align:center;display:grid;gap:8px;box-shadow:0 14px 40px rgba(0,0,0,.35);animation:okSalto .5s cubic-bezier(.2,1.5,.4,1)}
+.ok-foto{position:relative;justify-self:center;width:150px}
+.ok-foto img{width:150px;height:100px;object-fit:cover;border-radius:14px;display:block}
+.ok-check{position:absolute;right:-12px;bottom:-12px;width:46px;height:46px;border-radius:50%;background:#1E7A4F;color:#fff;font-size:28px;font-weight:900;display:grid;place-items:center;border:4px solid var(--surface);animation:okCheck .6s .15s cubic-bezier(.2,1.8,.4,1) both}
+.ok-frase{margin-top:8px;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;color:var(--good)}
+.ok-det{font-weight:700;font-size:16px}
+.ok-sin{font-size:13px;color:var(--bad);font-weight:600}
+.ok-prog{font-size:13px;color:var(--ink-2)}
+.ok-bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.ok-bar i{display:block;height:100%;background:#F2B705;border-radius:4px}
+@keyframes okEntra{from{opacity:0}to{opacity:1}}
+@keyframes okSalto{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes okCheck{from{transform:scale(0)}to{transform:scale(1)}}
+@media (prefers-color-scheme:dark){.ok-frase{color:#5FD39A}}
