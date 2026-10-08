@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 19:08";
+  const APP_VERSION = "2026-10-07 19:30";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -565,7 +565,7 @@
     $("alDiaOtra").onclick = () => { const f = $("alDiaFecha").value; if (f) marcarAlDia(f); };
   }
   async function marcarAlDia(f) {
-    try { await guardarAjuste({ alDia: f }); toast("Cuentas al día hasta " + prettyDate(f, { day: "numeric", month: "long" })); await cargarCuentas(); if (S.tab === "hist") renderHist(); }
+    try { await guardarAjuste({ alDia: f, alDiaCuando: new Date().toISOString() }); toast("Cuentas al día hasta " + prettyDate(f, { day: "numeric", month: "long" })); await cargarCuentas(); if (S.tab === "hist") renderHist(); }
     catch (e) { toast(e.message); }
   }
 
@@ -681,6 +681,16 @@
     $("rLista").innerHTML = filas.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
     const debe = Math.round(r.entregar);
     const caja = document.querySelector("#reparto .debe");
+    const nuevosTras = (S.fecha === alDia()) ? (S.registros || []).filter(x => x.tipo !== "gasto" && despuesDeCuadrar(x)) : [];
+    if (nuevosTras.length) {
+      const rn = calcReparto(totals(nuevosTras)), dn = Math.round(rn.entregar);
+      if (caja) { caja.classList.remove("favor", "contra", "saldado"); const cl = claseFavor(dn); if (cl) caja.classList.add(cl); }
+      const nl = `${nuevosTras.length} ${nuevosTras.length === 1 ? "lavado" : "lavados"} después de cuadrar`;
+      $("rDebeLbl").textContent = dn >= 0 ? (esDueno() ? `${nl} · te debe` : `${nl} · le debes al dueño`) : (esDueno() ? `${nl} · le debes` : `${nl} · el dueño te debe`);
+      $("rDebe").textContent = money(Math.abs(dn)); $("rDebe").className = "";
+      $("rNota").textContent = "Lo que se hizo antes de marcar al día ya quedó cuadrado; aquí va solo lo nuevo.";
+      return;
+    }
     const cuadrado = !!alDia() && S.fecha <= alDia();
     if (caja) { caja.classList.remove("favor", "contra", "saldado"); const cl = cuadrado ? (debe ? "saldado" : "") : claseFavor(debe); if (cl) caja.classList.add(cl); }
     if (cuadrado) {
@@ -708,11 +718,16 @@
     $("saldoMini").className = s == null ? "saldo-mini" : (s > 0 ? "saldo-mini chip-mini contra" : "saldo-mini chip-mini favor");
   }
 
+  // ¿Se registró después de que el dueño marcó ese día al día?
+  function despuesDeCuadrar(r) {
+    const c = ajustes().alDiaCuando, t = r && r.creado ? Date.parse(r.creado) : NaN;
+    return !!c && r.fecha === alDia() && (r.pendiente || (!isNaN(t) && t > Date.parse(c)));
+  }
   function puedeBorrar(r) {
     if (r.pendiente) return false;   // aún no llega al servidor
     if (esDueno()) return true;
     // Mauricio: sus lavados de hoy, mientras el día no esté marcado como al día
-    return r.rol === "trabajador" && r.tipo === "venta" && r.fecha === S.hoy && !(alDia() && r.fecha <= alDia());
+    return r.rol === "trabajador" && r.tipo === "venta" && r.fecha === S.hoy && (!(alDia() && r.fecha <= alDia()) || despuesDeCuadrar(r));
   }
 
 
