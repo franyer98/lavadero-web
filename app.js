@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-07 18:55";
+  const APP_VERSION = "2026-10-07 19:05";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -267,7 +267,6 @@
       if (esDueno() && S.vistos && S.vistosFecha === f && f === r.hoy) {
         const delTrab = nuevos.filter(x => !S.vistos.has(x.id) && x.rol === "trabajador");
         if (delTrab.length) {
-          campanita();
           const x = delTrab[0];
           toast(x.tipo === "gasto"
             ? `El trabajador registró ${esAbono(x) ? "un abono" : "un préstamo"} de ${money(x.valor)}`
@@ -664,11 +663,11 @@
     const k = "lav_meta_" + S.fecha;
     if (lograda && S.fecha === S.hoy && S.metaPrevia === false && !lsGet(k)) {
       lsSet(k, "1");
-      // espera a que termine la voz del registro, luego fiesta y felicitación
+      // fiesta y felicitación
       setTimeout(() => {
         celebrar("¡FELICITACIONES!", `Llegaron a la meta del día\n${money(total).replace(/ /g, "\u00a0")} de ${money(meta).replace(/ /g, "\u00a0")}`);
         if (!esDueno()) setTimeout(() => hablar(`${nombreTrab() || ""}, ¡felicitaciones! Llegaron a la meta del día.`), 2600);
-      }, 3200);
+      }, 700);
     }
     if (S.fecha === S.hoy) S.metaPrevia = lograda;
   }
@@ -1141,7 +1140,7 @@
     try {
       const subido = await guardarRegistro(p);
       toast(subido ? `${S.veh} ${money(valor)} guardado` : `Sin señal: ${S.veh} ${money(valor)} guardado en el celular, se sube solo`);
-      avisarVenta(S.veh, valor, S.pago === "Transferencia", `Agregaste ${ARTICULO[S.veh] || S.veh} por valor de ${valorHablado(valor)}${S.pago === "Transferencia" ? ", por transferencia" : ""}.`);
+      // Sin sonido al agregar lavados (solo suena la meta diaria)
       setValor(0); S.pago = "Efectivo"; renderForm();
       renderDia();
       if (subido) await cargarDia(true);
