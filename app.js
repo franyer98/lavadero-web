@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-08 18:05";
+  const APP_VERSION = "2026-10-30 06:49";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -173,7 +173,7 @@
     $("fecha").value = S.fecha;
     setTab(esDueno() ? (["dia", "hist", "aj"].includes(lsGet("lav_tab")) ? lsGet("lav_tab") : "dia") : "dia");
     renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos(); renderCola(); subirCola();
-    S.deudas = null; renderDeudas(); cargarDeudas();
+    S.deudas = null; renderDeudas(); cargarDeudas(); renderDescanso();
     cargarDia();
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refrescar(); }, REFRESCO_MS);
@@ -1267,6 +1267,8 @@
     $("cfgNombre").value = S.cfg.nombre;
     $("cfgTrab").value = nombreTrab();
     $("cfgMeta").value = pesosAMiles(metaDiaria());
+    $("cfgDescanso").value = ajustes().descansoInicio || "2026-11-01";
+    $("cfgDescansoCada").value = String(Number(ajustes().descansoCada) || 14);
     tdDraft = transfDestino(); drawTd();
     if (!$("expDesde").value) { $("expDesde").value = S.hoy.slice(0, 8) + "01"; $("expHasta").value = S.hoy; }
   }
@@ -1275,9 +1277,9 @@
   $("saveCfg").addEventListener("click", async () => {
     const nombre = $("cfgNombre").value.trim();
     try {
-      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([Object.assign({}, ajustes(), { tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio", meta: milesAPesos($("cfgMeta").value) || 100000 })]);
+      const servicios = (S.cfg.servicios || []).filter(x => !(x && x.tipo === "ajuste")).concat([Object.assign({}, ajustes(), { tipo: "ajuste", transf: tdDraft, trabajador: $("cfgTrab").value.trim() || "Mauricio", meta: milesAPesos($("cfgMeta").value) || 100000, descansoInicio: $("cfgDescanso").value || "2026-11-01", descansoCada: Number($("cfgDescansoCada").value) || 14 })]);
       await rpc("guardar_config", { p_pin: S.pin, p_nombre: nombre, p_servicios: servicios });
-      S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); toast("Guardado"); activarAvisos();
+      S.cfg.nombre = nombre; S.cfg.servicios = servicios; renderBrand(); renderDia(); renderDescanso(); toast("Guardado"); activarAvisos();
     } catch (e) { toast(e.message); }
   });
 
@@ -1347,6 +1349,38 @@
     const a = document.createElement("a"); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
+
+  // ---------- Días de descanso del trabajador ----------
+  function proximosDescansos(n) {
+    const ini = ajustes().descansoInicio || "2026-11-01", cada = Number(ajustes().descansoCada) || 14;
+    const hoy = S.hoy || todayStr();
+    const dif = d => Math.round((Date.parse(d + "T12:00:00Z") - Date.parse(hoy + "T12:00:00Z")) / 864e5);
+    let f = ini;
+    if (dif(f) < 0) { const k = Math.ceil(-dif(f) / cada); f = shiftDate(f, k * cada); }
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(shiftDate(f, i * cada));
+    return { fechas: out, dif };
+  }
+  function renderDescanso() {
+    const el = $("descanso");
+    if (!S.rol) { el.hidden = true; return; }
+    const { fechas, dif } = proximosDescansos(6);
+    const d = dif(fechas[0]), n = nombreTrab() || "el trabajador";
+    const largo = f => { const t = new Date(f + "T12:00:00Z").toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }); return t.charAt(0).toUpperCase() + t.slice(1); };
+    el.hidden = false;
+    el.classList.toggle("hoy", d === 0);
+    el.classList.toggle("pronto", d === 1);
+    $("descansoTit").textContent = esDueno()
+      ? (d === 0 ? `Hoy descansa ${n} 😴` : d === 1 ? `Mañana descansa ${n}` : `Próximo descanso de ${n}`)
+      : (d === 0 ? "Hoy descansas 😴" : d === 1 ? "Mañana descansas" : "Tu próximo descanso");
+    $("descansoSub").textContent = d === 0 ? (esDueno() ? "Hoy no se espera que registre lavados." : "¡Disfruta tu día!") : `${largo(fechas[0])} · ${d === 1 ? "mañana" : "en " + d + " días"}`;
+    $("descansoLista").innerHTML = "<b>Próximos descansos</b>" + fechas.map((f, i) => `<span class="${i === 0 ? "prox" : ""}">${esc(largo(f))}${dif(f) === 0 ? " (hoy)" : ""}</span>`).join("");
+  }
+  $("descanso").addEventListener("click", () => {
+    const l = $("descansoLista"), open = l.hidden;
+    l.hidden = !open; $("descanso").setAttribute("aria-expanded", String(open));
+    $("descanso").querySelector(".chev").textContent = open ? "−" : "+";
+  });
 
   // ---------- Animación de entrada ----------
   (function intro() {

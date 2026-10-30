@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-08_18:05">
+<link rel="stylesheet" href="app.css?v=2026-10-30_06:49">
 </head>
 <body>
 <!-- Animación de entrada: muñeco lavando un carro (se ve al abrir la app) -->
@@ -115,6 +115,13 @@
 
   <!-- CAJA -->
   <section id="view-dia">
+    <!-- Días de descanso del trabajador (domingo cada 15 días) -->
+    <button type="button" class="descanso" id="descanso" hidden aria-expanded="false">
+      <span class="descanso-ico" aria-hidden="true">🌴</span>
+      <span class="descanso-txt"><b id="descansoTit"></b><small id="descansoSub"></small></span>
+      <span class="chev" aria-hidden="true">+</span>
+      <span class="descanso-lista" id="descansoLista" hidden></span>
+    </button>
     <div class="datebar solo-dueno">
       <button class="iconbtn" id="prevDay" aria-label="Día anterior">‹</button>
       <input type="date" id="fecha" aria-label="Fecha">
@@ -296,6 +303,13 @@
       <div class="hint">La barra de la caja se llena hasta esta meta. Toca "Guardar ajustes" abajo.</div>
     </div>
     <div class="panel">
+      <h2>Descanso del trabajador</h2>
+      <label class="field"><span>Primer domingo de descanso</span><input type="date" id="cfgDescanso"></label>
+      <label class="field"><span>Cada cuánto</span>
+        <select id="cfgDescansoCada"><option value="7">Todos los domingos</option><option value="14">Un domingo cada 15 días</option><option value="21">Un domingo cada 3 semanas</option><option value="28">Un domingo al mes (cada 4 semanas)</option></select></label>
+      <div class="hint">Aparece arriba en la caja de los dos celulares. Toca "Guardar ajustes" abajo.</div>
+    </div>
+    <div class="panel">
       <h2>Nombre del trabajador</h2>
       <input id="cfgTrab" maxlength="30" placeholder="Ej. Mauricio">
       <div class="hint">La voz lo dice al inicio: "Mauricio, agregaste una moto por valor de 12 mil pesos".</div>
@@ -343,7 +357,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-08_18:05"></script>
-<script src="app.js?v=2026-10-08_18:05"></script>
+<script src="config.js?v=2026-10-30_06:49"></script>
+<script src="app.js?v=2026-10-30_06:49"></script>
 </body>
 </html>

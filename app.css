@@ -403,7 +403,7 @@ header.top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
 @media (prefers-color-scheme:dark){.gan-graf .gv{fill:#5FD39A}}
 .gan-dd h3{margin:4px 0 6px;font-size:15px;font-weight:800}
 .gdd{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
-.gdd-f{display:grid;font-weight:700;font-size:14px;text-transform:capitalize}
+.gdd-f{display:grid;font-weight:700;font-size:14px}
 .gdd-f small{font-weight:500;font-size:11px;color:var(--ink-2);text-transform:none}
 .gdd-b{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
 .gdd-b i{display:block;height:100%;border-radius:5px;background:#F2B705}
@@ -499,3 +499,16 @@ body.trab-reg #form{margin-top:12px}
 @keyframes okSalto{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes okCheck{from{transform:scale(0)}to{transform:scale(1)}}
 @media (prefers-color-scheme:dark){.ok-frase{color:#5FD39A}}
+
+/* Descanso del trabajador */
+.descanso{width:100%;margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;text-align:left;padding:12px 14px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.descanso-ico{font-size:26px}
+.descanso-txt{display:grid;gap:2px}
+.descanso-txt b{font-size:16px}
+.descanso-txt small{color:var(--ink-2);font-size:13px}
+.descanso .chev{font-size:22px;color:var(--ink-2)}
+.descanso-lista{grid-column:1/-1;display:grid;gap:4px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px}
+.descanso-lista b{text-transform:none;font-size:13px;color:var(--ink-2)}
+.descanso-lista .prox{font-weight:700}
+.descanso.pronto{border-color:#F2B705;background:rgba(242,183,5,.14)}
+.descanso.hoy{border-color:#1E7A4F;background:rgba(30,122,79,.14)}
