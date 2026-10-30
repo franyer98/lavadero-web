@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-30 06:49";
+  const APP_VERSION = "2026-10-30 18:46";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -764,7 +764,15 @@
     renderReparto(t);
     const nLav = t.carros + t.motos;
     $("listSub").textContent = regs.length ? `${nLav} ${nLav === 1 ? "lavado" : "lavados"}${(t.prest || t.abonos) ? " · préstamos" : ""} · más reciente arriba` : "";
-    $("form").hidden = esDueno() || S.fecha > S.hoy;   // solo el trabajador registra lavados
+    // El trabajador registra los de hoy; el dueño solo puede agregar a días anteriores (lo que se le olvidó)
+    $("form").hidden = esDueno() ? S.fecha >= S.hoy : S.fecha > S.hoy;
+    const fa = $("formAviso");
+    if (esDueno() && S.fecha < S.hoy) {
+      const cuad = alDia() && S.fecha <= alDia();
+      fa.hidden = false;
+      fa.innerHTML = `<b>Agregar a ${esc(prettyDate(S.fecha, { weekday: "long", day: "numeric", month: "long" }).replace(/\s*(de\s*)?\d{4}$/, ""))}</b> · para lo que se le olvidó registrar a ${esc(nombreTrab() || "el trabajador")}.`
+        + (cuad ? `<br><span class="txt-aviso">Ojo: ese día ya está cuadrado. Lo que agregues cambia lo que se debía.</span>` : "");
+    } else fa.hidden = true;
     const box = $("items");
     if (!regs.length) {
       box.innerHTML = `<div class="empty">${esHoy ? "Todavía no hay lavados hoy." : "No hay registros este día."}</div>`;
@@ -1177,12 +1185,14 @@
       : `Llevan ${money(t.total)} hoy · faltan ${money(meta - t.total)} para la meta`;
     const el = document.createElement("div");
     el.id = "okLavado";
+    const fraseTxt = esDueno() ? `✓ Agregado al ${prettyDate(S.fecha, { weekday: "long", day: "numeric", month: "long" }).replace(/\s*(de\s*)?\d{4}$/, "")}` : fraseAnimo();
+    const progTxt = esDueno() ? `Ese día van ${money(totalDia)}` : progreso;
     el.innerHTML = `<div class="ok-card" role="status">
       <div class="ok-foto"><img src="fotos/${esc(String(veh).toLowerCase())}.jpg" alt=""><span class="ok-check">✓</span></div>
-      <div class="ok-frase">${esc(fraseAnimo())}</div>
+      <div class="ok-frase">${esc(fraseTxt)}</div>
       <div class="ok-det">${esc(veh)} · ${esc(money(valor))} · ${esc(pago)}</div>
       ${subido ? "" : '<div class="ok-sin">Sin señal: quedó guardado en el celular y se sube solo</div>'}
-      <div class="ok-prog">${esc(progreso)}</div>
+      <div class="ok-prog">${esc(progTxt)}</div>
       <div class="ok-bar"><i style="width:${Math.min(100, Math.round(t.total / meta * 100))}%"></i></div>
     </div>`;
     document.body.appendChild(el);
