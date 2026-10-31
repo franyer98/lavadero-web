@@ -514,3 +514,11 @@ body.trab-reg #form{margin-top:12px}
 .descanso.hoy{border-color:#1E7A4F;background:rgba(30,122,79,.14)}
 .form-aviso{padding:10px 12px;border-radius:10px;background:rgba(242,183,5,.16);border:1px solid #F2B705;font-size:14px;line-height:1.4}
 .form-aviso .txt-aviso{color:var(--bad);font-weight:700}
+
+/* Abonos a cuentas pendientes */
+.abonos{display:grid;gap:4px;padding:8px 10px;border-radius:10px;background:var(--surface-2)}
+.abonos>b{font-size:13px;color:var(--ink-2)}
+.abono{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
+.abono-der{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.debe-sub{display:block;font-size:12px;font-weight:600;opacity:.85;margin-top:2px}
+.abono-form{display:grid;gap:8px}

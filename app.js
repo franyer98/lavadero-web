@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-30 18:46";
+  const APP_VERSION = "2026-10-31 07:53";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -285,7 +285,7 @@
       $("syncState").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
       if (S.edit && silencioso) return; // no interrumpir mientras se edita
       if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); cargarDeudas(); if (!esDueno()) cargarGanancias(); }
-      if (silencioso && document.activeElement && /^(movValor|ajusteValor|alDiaFecha)$/.test(document.activeElement.id)) return;
+      if (silencioso && document.activeElement && /^(movValor|ajusteValor|alDiaFecha|abonoValor)$/.test(document.activeElement.id)) return;
       renderDia();
     } catch (e) {
       if (my !== cargando) return;
@@ -499,7 +499,13 @@
     S.cfg.servicios = servicios;
   }
   let cuentasArmado = false;
+  async function cargarEntregas() {
+    try { const r = await rpc("entregas_ver", { p_pin: S.pin }); S.entregas = r.entregas || []; }
+    catch (e) { S.entregas = null; }   // si aún no existe en Supabase, no se muestra
+  }
+  let entArmado = null;
   async function cargarCuentas() {
+    await cargarEntregas();
     const box = $("cuentasBox");
     const desdeFijo = alDia();
     if (!esDueno()) {
@@ -554,14 +560,29 @@
       ? (soloVer ? "Debes " : "Te debe ") + money(v)
       : (soloVer ? "El dueño te debe " : "Le debes ") + money(-v);
     const lista = c.dias.map(d => { const v = Math.round(calcReparto(d.t).entregar); return `<div class="fila fila-${claseFavor(v) || "cero"}"><dt>${esc(corto(d.f))}</dt><dd class="txt-${claseFavor(v)}">${quien(v)}</dd></div>`; }).join("");
-    const total = Math.round(c.debe);
+    const ents = Array.isArray(S.entregas) ? S.entregas : [];
+    const abonado = ents.reduce((a, e) => a + (e.sentido === "dueno" ? -1 : 1) * Number(e.valor), 0);
+    const debia = Math.round(c.debe);
+    const total = debia - abonado;
+    const nombre = nombreTrab() || "el trabajador";
+    const fechaCorta = t => new Date(t).toLocaleDateString("es-CO", { day: "numeric", month: "short", timeZone: TZ }).replace(".", "");
+    const listaAbonos = ents.length ? `<div class="abonos"><b>Abonos</b>${ents.map(e => {
+      const txt = e.sentido === "dueno" ? (soloVer ? "El dueño te pagó" : `Le pagaste a ${nombre}`) : (soloVer ? "Le entregaste al dueño" : `${nombre} te entregó`);
+      return `<div class="abono"><span>${esc(fechaCorta(e.creado))} · ${esc(txt)}</span><span class="abono-der"><b>${money(e.valor)}</b>${soloVer ? "" : `<button type="button" class="linkbtn ${entArmado === e.id ? "armado" : ""}" data-ent="${esc(e.id)}">${entArmado === e.id ? "¿Borrar?" : "✕"}</button>`}</span></div>`;
+    }).join("")}</div>` : "";
     const textoTotal = total >= 0
       ? (soloVer ? "le debes entregar al dueño" : "te debe entregar")
       : (soloVer ? "el dueño te debe" : "tú le debes al trabajador");
     box.innerHTML = `<h2>Cuentas pendientes</h2>
       <div class="cta-linea">${c.desde ? `Al día hasta <b>${esc(prettyDate(c.desde, { weekday: "long", day: "numeric", month: "long" }))}</b>` : (soloVer ? "El dueño aún no ha marcado hasta qué día están al día." : "Aún no has marcado hasta qué día están al día.")}</div>
       ${c.dias.length ? `<dl>${lista}</dl>
-        <div class="debe ${claseFavor(total)}"><span>${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · ${textoTotal}</span><b>${money(Math.abs(total))}</b></div>
+        ${listaAbonos}
+        <div class="debe ${total ? claseFavor(total) : "saldado"}"><span>${total === 0 ? "✓ A paz y salvo con los abonos" : `${c.dias.length} ${c.dias.length === 1 ? "día" : "días"} sin cuadrar · ${textoTotal}`}${ents.length ? `<small class="debe-sub">Debía ${money(Math.abs(debia))} · abonos ${money(Math.abs(abonado))}</small>` : ""}</span><b>${money(Math.abs(total))}</b></div>
+        ${!soloVer && Array.isArray(S.entregas) && total !== 0 ? `<div class="abono-form">
+          <label class="field"><span>${total > 0 ? `¿Cuánto te entregó ${esc(nombre)}?` : `¿Cuánto le pagaste a ${esc(nombre)}?`} (en miles)</span>
+            <input id="abonoValor" class="money num" inputmode="decimal" placeholder="Ej. 50 = $50.000"></label>
+          <button type="button" class="primary" id="abonoBtn" data-sentido="${total > 0 ? "trabajador" : "dueno"}">${total > 0 ? "Registrar abono" : "Registrar pago"}</button>
+        </div>` : ""}
         ${total < 0 ? `<p class="hint">Es porque las transferencias que llegaron a la cuenta del dueño superan su mitad.</p>` : ""}`
         : `<p class="hint">${c.desde ? "No hay días pendientes: están al día." : "No hay lavados en los últimos 30 días."}</p>`}
       ${soloVer ? '<p class="hint">Solo el dueño puede marcar las cuentas al día.</p>' : `<div class="cta-acciones">
@@ -576,6 +597,21 @@
       cuentasArmado = false; await marcarAlDia(S.hoy);
     };
     $("alDiaOtra").onclick = () => { const f = $("alDiaFecha").value; if (f) marcarAlDia(f); };
+    const ab = $("abonoBtn");
+    if (ab) ab.onclick = async () => {
+      const v = milesAPesos($("abonoValor").value);
+      if (!v) { toast("Escribe el valor del abono"); return; }
+      ab.disabled = true;
+      try { await rpc("entrega_guardar", { p_pin: S.pin, p: { valor: v, sentido: ab.dataset.sentido } }); toast(`Abono de ${money(v)} registrado`); await cargarEntregas(); renderCuentas(); }
+      catch (e) { toast(e.message); ab.disabled = false; }
+    };
+    box.querySelectorAll("[data-ent]").forEach(b => b.onclick = async () => {
+      const id = b.dataset.ent;
+      if (entArmado !== id) { entArmado = id; renderCuentas(); setTimeout(() => { if (entArmado === id) { entArmado = null; renderCuentas(); } }, 4000); return; }
+      entArmado = null;
+      try { await rpc("entrega_borrar", { p_pin: S.pin, p_id: id }); toast("Abono borrado"); await cargarEntregas(); renderCuentas(); }
+      catch (e) { toast(e.message); }
+    });
   }
   async function marcarAlDia(f) {
     try { await guardarAjuste({ alDia: f, alDiaCuando: new Date().toISOString() }); toast("Cuentas al día hasta " + prettyDate(f, { day: "numeric", month: "long" })); await cargarCuentas(); if (S.tab === "hist") renderHist(); }
@@ -754,7 +790,7 @@
     $("ticketFecha").textContent = (esHoy ? "Hoy · " : "") + prettyDate(S.fecha);
     $("totVentas").textContent = money(t.total);
     renderMeta(t.total);
-    if (S.cuentas && S.fecha === S.hoy && !cuentasArmado) renderCuentas();
+    if (S.cuentas && S.fecha === S.hoy && !cuentasArmado && !$("cuentasBox").contains(document.activeElement)) renderCuentas();
     if (!esDueno() && S.fecha === S.hoy) { S.totHoy = t.total; renderGanancias(); }
     $("totCarros").textContent = t.vehiculos;
     const orden = VEHICULOS.concat(Object.keys(t.porTipo).filter(k => !VEHICULOS.includes(k)));
