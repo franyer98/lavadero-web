@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-10-31_07:53">
+<link rel="stylesheet" href="app.css?v=2026-11-04_08:20">
 </head>
 <body>
 <!-- Animación de entrada: muñeco lavando un carro (se ve al abrir la app) -->
@@ -275,6 +275,11 @@
       <div class="bars" id="bars"></div>
       <div class="axis" id="axis"></div>
     </div>
+    <!-- Solo el dueño: ganancias mes a mes -->
+    <div class="hist meses" id="mesesBox">
+      <h2>Ganancias mes a mes</h2>
+      <div id="mesesBody"><p class="hint" style="padding:0 16px">Cargando…</p></div>
+    </div>
     <div class="hist">
       <h2>Día por día</h2>
       <div class="hist-list" id="histBody"></div>
@@ -358,7 +363,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-10-31_07:53"></script>
-<script src="app.js?v=2026-10-31_07:53"></script>
+<script src="config.js?v=2026-11-04_08:20"></script>
+<script src="app.js?v=2026-11-04_08:20"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-10-31 07:53";
+  const APP_VERSION = "2026-11-04 08:20";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -188,7 +188,7 @@
     document.body.classList.toggle("trab-reg", !esDueno() && t === "dia");
     document.body.classList.toggle("trab-cta", !esDueno() && t === "cta"); $("view-hist").hidden = t !== "hist"; $("view-aj").hidden = t !== "aj"; $("view-gan").hidden = t !== "gan";
     lsSet("lav_tab", t);
-    if (t === "hist") cargarHist();
+    if (t === "hist") { cargarHist(); cargarMeses(); }
     if (t === "aj") { renderCfgEditor(); verEstadoSql(); }
     if (t === "gan") { renderGanancias(); cargarGanancias(); }
   }
@@ -1427,6 +1427,41 @@
     l.hidden = !open; $("descanso").setAttribute("aria-expanded", String(open));
     $("descanso").querySelector(".chev").textContent = open ? "−" : "+";
   });
+
+  // ---------- Ganancias mes a mes (solo el dueño) ----------
+  async function cargarMeses() {
+    if (!esDueno()) return;
+    const body = $("mesesBody");
+    try {
+      const r = await rpc("mis_ganancias", { p_pin: S.pin, p_desde: shiftDate(S.hoy.slice(0, 8) + "01", -366), p_hasta: S.hoy });
+      const meses = {};
+      (r.dias || []).forEach(d => {
+        const k = String(d.fecha).slice(0, 7), m = meses[k] = meses[k] || { ventas: 0, carros: 0, dias: 0 };
+        m.ventas += Number(d.ventas) || 0; m.carros += Number(d.carros) || 0; if (Number(d.ventas) > 0) m.dias++;
+      });
+      const claves = Object.keys(meses).sort().reverse().slice(0, 12);
+      if (!claves.length) { body.innerHTML = '<p class="hint" style="padding:0 16px">Aún no hay meses con lavados.</p>'; return; }
+      const max = Math.max(1, ...claves.map(k => meses[k].ventas));
+      const actual = S.hoy.slice(0, 7);
+      const nombre = k => { const [y, m] = k.split("-").map(Number); const n = new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("es-CO", { month: "long", year: "numeric", timeZone: "UTC" }); return n.charAt(0).toUpperCase() + n.slice(1); };
+      const anterior = k => { const [y, m] = k.split("-").map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`; };
+      const totalAnio = claves.reduce((a, k) => a + meses[k].ventas / 2, 0);
+      body.innerHTML = `<div class="mes-resumen">En los últimos ${claves.length} ${claves.length === 1 ? "mes" : "meses"} tu ganancia fue <b>${money(totalAnio).replace(" ", "\u00a0")}</b></div>` + claves.map(k => {
+        const m = meses[k], tuya = m.ventas / 2, prev = meses[anterior(k)];
+        let comp = "";
+        if (prev && prev.ventas > 0 && k !== actual) {
+          const pct = Math.round((m.ventas - prev.ventas) / prev.ventas * 100);
+          comp = `<span class="mes-comp ${pct >= 0 ? "sube" : "baja"}">${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}%</span>`;
+        }
+        return `<div class="mes ${k === actual ? "actual" : ""}">
+          <div class="mes-top"><b>${esc(nombre(k))}${k === actual ? ' <small>(en curso)</small>' : ""}</b>${comp}</div>
+          <div class="mes-bar"><i style="width:${(m.ventas / max * 100).toFixed(1)}%"></i></div>
+          <div class="mes-nums"><span>Tu ganancia <b>${money(tuya)}</b></span><span>Ventas ${money(m.ventas)}</span></div>
+          <div class="mes-sub">${m.carros} ${m.carros === 1 ? "vehículo" : "vehículos"} · ${m.dias} ${m.dias === 1 ? "día trabajado" : "días trabajados"} · promedio ${money(Math.round(m.ventas / Math.max(1, m.dias)))} por día</div>
+        </div>`;
+      }).join("");
+    } catch (e) { body.innerHTML = `<p class="hint" style="padding:0 16px">No se pudieron cargar las ganancias: ${esc(e.message)}</p>`; }
+  }
 
   // ---------- Animación de entrada ----------
   (function intro() {
