@@ -6,7 +6,7 @@
   const PLURAL = { Carro: "carros", Moto: "motos", Mototaxi: "mototaxis", Turbo: "turbos", Motocarguero: "motocargueros" };
   const PAGOS = ["Efectivo", "Nequi", "Daviplata", "Transferencia"];
   const GASTOS = ["Jabón/insumos", "Almuerzo", "Agua/luz", "Pago trabajador", "Otro"];
-  const APP_VERSION = "2026-11-04 08:20";
+  const APP_VERSION = "2026-11-10 21:33";
   const REFRESCO_MS = 20000;
   const ERRORES = {
     x_pin: "PIN incorrecto.",
@@ -174,6 +174,7 @@
     setTab(esDueno() ? (["dia", "hist", "aj"].includes(lsGet("lav_tab")) ? lsGet("lav_tab") : "dia") : "dia");
     renderBrand(); renderForm(); renderDia(); cerrarPrest(); activarAvisos(); renderCola(); subirCola();
     S.deudas = null; renderDeudas(); cargarDeudas(); renderDescanso();
+    S.fiados = null; renderFiados(); cargarFiados();
     cargarDia();
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refrescar(); }, REFRESCO_MS);
@@ -284,7 +285,7 @@
       banner("");
       $("syncState").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
       if (S.edit && silencioso) return; // no interrumpir mientras se edita
-      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); cargarDeudas(); if (!esDueno()) cargarGanancias(); }
+      if (!silencioso || !S.cuentasT || Date.now() - S.cuentasT > 60000) { S.cuentasT = Date.now(); cargarCuentas(); cargarDeudas(); cargarFiados(); if (!esDueno()) cargarGanancias(); }
       if (silencioso && document.activeElement && /^(movValor|ajusteValor|alDiaFecha|abonoValor)$/.test(document.activeElement.id)) return;
       renderDia();
     } catch (e) {
@@ -370,16 +371,17 @@
 
   const esAbono = r => /^abono/i.test(r.concepto || "");
   function totals(regs) {
-    let total = 0, carros = 0, motos = 0, efectivo = 0, transf = 0, prest = 0, abonos = 0; const porTipo = {};
+    let total = 0, carros = 0, motos = 0, efectivo = 0, transf = 0, prest = 0, abonos = 0, fiado = 0; const porTipo = {};
     (regs || []).forEach(r => {
       if (r.tipo === "gasto") { if (esAbono(r)) abonos += r.valor || 0; else prest += r.valor || 0; return; }
       const v = r.valor || 0;
+      if (r.pago === "Fiado") { fiado += v; return; }   // fiado: no suma hasta que lo paguen
       total += v;
       if (r.vehiculo === "Moto") motos++; else carros++;
       const tipo = r.vehiculo || "Carro"; porTipo[tipo] = (porTipo[tipo] || 0) + 1;
       if (r.pago === "Transferencia") transf += v; else efectivo += v;
     });
-    return { total, carros, motos, efectivo, transf, prest, abonos, porTipo, vehiculos: carros + motos };
+    return { total, carros, motos, efectivo, transf, prest, abonos, fiado, porTipo, vehiculos: carros + motos };
   }
 
   // ---------- Reparto mitad y mitad ----------
@@ -821,7 +823,7 @@
       const editando = S.edit && S.edit.id === r.id;
       const what = g
         ? `<b>${esAbono(r) ? "Abono a préstamo" : "Préstamo al trabajador"}</b><span>${esc(r.nota || "")}</span>`
-        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaConf(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>${esDueno() && tr && !r.pendiente && !editando ? (confirmadaManual(r)
+        : `<b>${esc(r.vehiculo || "Carro")}</b><span>${r.pago === "Fiado" ? `<span class="tag nq-esp">Fiado · ${esc(r.nota || "por cobrar")}</span>` : tr ? '<span class="tag tr">Transferencia</span>' : '<span class="tag">Efectivo</span>'}${tr ? etiquetaConf(r) : ""}${r.pendiente ? ' <span class="tag espera">Sin subir</span>' : ""}</span>${esDueno() && tr && !r.pendiente && !editando ? (confirmadaManual(r)
             ? `<button class="conf-btn deshacer" data-act="desconf" data-id="${esc(r.id)}">Quitar confirmación</button>`
             : (transfConfirmada(r) ? "" : `<button class="conf-btn" data-act="conf" data-id="${esc(r.id)}">✓ Confirmar que llegó</button>`)) : ""}`;
             return `<div class="item ${g ? (esAbono(r) ? "abono" : "gasto") : ""} ${editando ? "editing" : ""}">
@@ -840,7 +842,7 @@
       ${g ? "" : `<div class="opts">${VEHICULOS.map(v => btn("ev", v, e.vehiculo, v)).join("")}</div>`}
       <label class="field"><span>Valor (en miles)</span><input id="edValor" class="money num" inputmode="decimal" value="${pesosAMiles(e.valor)}"><small class="miles-prev">${e.valor ? "= " + money(e.valor) : ""}</small></label>
       ${g ? `<label class="field"><span>Motivo</span><input id="edNota" maxlength="80" value="${esc(e.nota || "")}"></label>`
-          : `<div class="opts">${btn("ep", "Efectivo", e.pago, "Efectivo")}${btn("ep", "Transferencia", e.pago, "Transferencia")}</div>`}
+          : `<div class="opts">${btn("ep", "Efectivo", e.pago, "Efectivo")}${btn("ep", "Transferencia", e.pago, "Transferencia")}${btn("ep", "Fiado", e.pago, "Fiado")}</div>`}
       <div class="edit-actions">
         <button type="button" class="primary" data-act="save">Guardar</button>
         <button type="button" class="danger-o ${e.armed ? "arm" : ""}" data-act="del">${e.armed ? "¿Seguro? Toca otra vez" : "Borrar registro"}</button>
@@ -1014,9 +1016,12 @@
   function renderForm() {
     document.querySelectorAll(".vehbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.veh === S.veh)));
     $("transf").setAttribute("aria-pressed", String(S.pago === "Transferencia"));
+    $("fiadoT").setAttribute("aria-pressed", String(S.pago === "Fiado"));
+    $("fiadoQuienF").hidden = S.pago !== "Fiado";
   }
   document.querySelectorAll(".vehbtn").forEach(b => b.addEventListener("click", () => { S.veh = b.dataset.veh; renderForm(); }));
   $("transf").addEventListener("click", () => { S.pago = S.pago === "Transferencia" ? "Efectivo" : "Transferencia"; renderForm(); });
+  $("fiadoT").addEventListener("click", () => { S.pago = S.pago === "Fiado" ? "Efectivo" : "Fiado"; renderForm(); if (S.pago === "Fiado") $("fiadoQuien").focus(); });
   const parseValor = () => milesAPesos($("valor").value);
   const setValor = n => { $("valor").value = pesosAMiles(n); const pv = $("valor").parentNode.querySelector(".miles-prev"); if (pv) pv.textContent = n ? "= " + money(n) : ""; };
 
@@ -1026,6 +1031,39 @@
     f.hidden = !open; $("abrirPrest").setAttribute("aria-expanded", String(open));
     $("abrirPrest").querySelector(".chev").textContent = open ? "−" : "+";
     if (open) { cargarMovs(); }
+  });
+
+  // ---------- Fiados por cobrar ----------
+  async function cargarFiados() {
+    try { const r = await rpc("fiados_ver", { p_pin: S.pin }); S.fiados = r.fiados || []; S.fiadoTot = Number(r.total) || 0; }
+    catch (e) { if (!S.fiados) S.fiados = null; }
+    renderFiados();
+  }
+  function renderFiados() {
+    const box = $("fiadosBox");
+    if (!Array.isArray(S.fiados) || !S.fiados.length) { box.hidden = true; return; }
+    box.hidden = false;
+    $("fiadosTot").textContent = "· " + money(S.fiadoTot).replace(" ", "\u00a0");
+    const dias = f => Math.round((Date.parse(S.hoy + "T12:00:00Z") - Date.parse(f + "T12:00:00Z")) / 864e5);
+    const fecha = f => new Date(f + "T12:00:00Z").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).replace(/\./g, "");
+    $("fiadosLista").innerHTML = S.fiados.map(x => {
+      const d = dias(x.fecha);
+      return `<div class="fiado">
+        <div class="fiado-txt"><b>${esc(x.nota || "Sin nombre")}</b><small>${esc(x.vehiculo || "")} · ${esc(fecha(x.fecha))} · ${d === 0 ? "hoy" : d === 1 ? "hace 1 día" : "hace " + d + " días"}</small></div>
+        <div class="fiado-der"><span class="fiado-val">${money(x.valor)}</span>
+          <div class="fiado-acc"><button type="button" class="conf-btn" data-fiado="Efectivo" data-id="${esc(x.id)}">Pagó en efectivo</button>
+          <button type="button" class="conf-btn tr" data-fiado="Transferencia" data-id="${esc(x.id)}">Pagó por transferencia</button></div></div>
+      </div>`;
+    }).join("");
+  }
+  $("fiadosLista").addEventListener("click", async ev => {
+    const b = ev.target.closest("button[data-fiado]"); if (!b) return;
+    b.disabled = true;
+    try {
+      const x = await rpc("fiado_pagar", { p_pin: S.pin, p_id: b.dataset.id, p_pago: b.dataset.fiado });
+      toast(`Fiado pagado: ${money(x.valor)} ${b.dataset.fiado === "Efectivo" ? "en efectivo" : "por transferencia"}. Ya suma en la caja de hoy.`);
+      await cargarFiados(); if (S.fecha === S.hoy) cargarDia(true); else setFecha(S.hoy);
+    } catch (e) { toast(e.message); b.disabled = false; }
   });
 
   // ---------- Lo que el dueño le debe al trabajador ----------
@@ -1227,6 +1265,7 @@
       <div class="ok-foto"><img src="fotos/${esc(String(veh).toLowerCase())}.jpg" alt=""><span class="ok-check">✓</span></div>
       <div class="ok-frase">${esc(fraseTxt)}</div>
       <div class="ok-det">${esc(veh)} · ${esc(money(valor))} · ${esc(pago)}</div>
+      ${pago === "Fiado" ? '<div class="ok-sin" style="color:#9A6A00">Quedó en "Fiados por cobrar": no suma hasta que lo paguen</div>' : ""}
       ${subido ? "" : '<div class="ok-sin">Sin señal: quedó guardado en el celular y se sube solo</div>'}
       <div class="ok-prog">${esc(progTxt)}</div>
       <div class="ok-bar"><i style="width:${Math.min(100, Math.round(t.total / meta * 100))}%"></i></div>
@@ -1245,6 +1284,7 @@
     const hint = $("formHint");
     if (!valor) { hint.textContent = "Escribe el valor."; $("valor").focus(); return; }
     const p = { tipo: "venta", servicio: "Lavado", vehiculo: S.veh, valor, pago: S.pago };
+    if (S.pago === "Fiado") p.nota = $("fiadoQuien").value.trim() || "Sin nombre";
     if (esDueno() && S.fecha !== S.hoy) p.fecha = S.fecha;
     hint.textContent = "";
     guardando = true; $("guardar").disabled = true;
@@ -1252,9 +1292,10 @@
       const totalAntes = totals(S.registros).total;
       const subido = await guardarRegistro(p);
       const veh = S.veh, pago = S.pago;
-      setValor(0); S.pago = "Efectivo"; renderForm();
+      setValor(0); S.pago = "Efectivo"; $("fiadoQuien").value = ""; renderForm();
+      if (pago === "Fiado") cargarFiados();
       renderDia();
-      ventanaGuardado(veh, valor, pago, subido, totalAntes + valor);   // sin sonido: ventana de confirmación con ánimo
+      ventanaGuardado(veh, valor, pago, subido, totalAntes + (pago === "Fiado" ? 0 : valor));   // sin sonido: ventana de confirmación con ánimo
       if (subido) await cargarDia(true);
     } catch (e) {
       hint.textContent = "No se guardó. " + e.message;

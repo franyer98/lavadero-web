@@ -539,3 +539,16 @@ body.trab-reg #form{margin-top:12px}
 .mes-nums b{color:var(--good);font-size:16px}
 .mes-sub{font-size:12px;color:var(--ink-2)}
 @media (prefers-color-scheme:dark){.mes-nums b,.meses .mes-resumen b{color:#5FD39A}}
+
+/* Fiados por cobrar */
+.fiado-t[aria-pressed="true"]{border-color:#F2B705;background:rgba(242,183,5,.16)}
+.fiados h2 small{color:#9A6A00;font-weight:800}
+.fiado{display:grid;gap:6px;padding:10px 0;border-top:1px dashed var(--line)}
+.fiado-txt{display:grid;gap:2px}
+.fiado-txt small{color:var(--ink-2);font-size:12px}
+.fiado-der{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.fiado-val{font-weight:800;font-size:17px}
+.fiado-acc{display:flex;gap:6px;flex-wrap:wrap}
+.fiado-acc .conf-btn{margin-top:0}
+.conf-btn.tr{background:#2A6F97}
+@media (prefers-color-scheme:dark){.fiados h2 small{color:#F5C431}}

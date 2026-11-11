@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Las letras se cargan sin frenar la pantalla: si la señal es mala, abre con la letra del celular -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=2026-11-04_08:20">
+<link rel="stylesheet" href="app.css?v=2026-11-10_21:33">
 </head>
 <body>
 <!-- Animación de entrada: muñeco lavando un carro (se ve al abrir la app) -->
@@ -184,6 +184,11 @@
       <button type="button" class="transf" id="transf" aria-pressed="false">
         <span class="box" aria-hidden="true"></span> Pagó por transferencia
       </button>
+      <button type="button" class="transf fiado-t" id="fiadoT" aria-pressed="false">
+        <span class="box" aria-hidden="true"></span> Fiado (lo paga después)
+      </button>
+      <label class="field" id="fiadoQuienF" hidden><span>¿Quién quedó debiendo?</span>
+        <input id="fiadoQuien" maxlength="60" placeholder="Ej. Don Pedro, moto roja ABC12"></label>
 
       <button class="primary" id="guardar" type="submit">Guardar</button>
       <div class="hint" id="formHint"></div>
@@ -213,6 +218,13 @@
         </div>
         <div class="movs solo-dueno" id="movs"></div>
       </form>
+    </div>
+
+    <!-- Lavados fiados: pendientes de cobro, no suman hasta que los paguen -->
+    <div class="panel fiados b-reg" id="fiadosBox" hidden>
+      <h2>Fiados por cobrar <small id="fiadosTot"></small></h2>
+      <div class="hint">No suman en la caja ni en el reparto hasta que los paguen. Al pagar, cuentan en el día que se pagan.</div>
+      <div id="fiadosLista"></div>
     </div>
 
     <!-- Lo que el dueño le debe al trabajador (externo al lavadero, restantes) -->
@@ -363,7 +375,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="config.js?v=2026-11-04_08:20"></script>
-<script src="app.js?v=2026-11-04_08:20"></script>
+<script src="config.js?v=2026-11-10_21:33"></script>
+<script src="app.js?v=2026-11-10_21:33"></script>
 </body>
 </html>
